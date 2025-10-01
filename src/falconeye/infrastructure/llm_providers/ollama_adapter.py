@@ -2,9 +2,11 @@
 
 import asyncio
 from typing import List
+import time
 import ollama
 from ...domain.services.llm_service import LLMService
 from ...domain.models.prompt import PromptContext
+from ..logging import FalconEyeLogger, logging_context
 
 
 class OllamaLLMAdapter(LLMService):
@@ -49,6 +51,9 @@ class OllamaLLMAdapter(LLMService):
         # Initialize Ollama client
         self.client = ollama.Client(host=host)
 
+        # Initialize logger
+        self.logger = FalconEyeLogger.get_instance()
+
     async def analyze_code_security(
         self,
         context: PromptContext,
@@ -68,16 +73,57 @@ class OllamaLLMAdapter(LLMService):
         Returns:
             Raw AI response with security findings
         """
-        # Format context for AI
-        user_prompt = context.format_for_ai()
+        with logging_context(operation="llm_analysis"):
+            start_time = time.time()
 
-        # Call LLM
-        response = await self._call_ollama(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-        )
+            # Format context for AI
+            user_prompt = context.format_for_ai()
+            prompt_length = len(user_prompt)
 
-        return response
+            self.logger.info(
+                "Starting security analysis",
+                extra={
+                    "model": self.chat_model,
+                    "prompt_length": prompt_length,
+                    "temperature": self.temperature
+                }
+            )
+
+            try:
+                # Call LLM
+                response = await self._call_ollama(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                )
+
+                duration = time.time() - start_time
+                response_length = len(response) if response else 0
+
+                self.logger.info(
+                    "Security analysis completed",
+                    extra={
+                        "duration_seconds": round(duration, 2),
+                        "prompt_length": prompt_length,
+                        "response_length": response_length,
+                        "model": self.chat_model
+                    }
+                )
+
+                return response
+
+            except Exception as e:
+                duration = time.time() - start_time
+                self.logger.error(
+                    "Security analysis failed",
+                    exc_info=True,
+                    extra={
+                        "duration_seconds": round(duration, 2),
+                        "error_type": type(e).__name__,
+                        "model": self.chat_model,
+                        "host": self.host
+                    }
+                )
+                raise
 
     async def generate_embedding(self, text: str) -> List[float]:
         """
@@ -112,10 +158,55 @@ class OllamaLLMAdapter(LLMService):
         Returns:
             List of embedding vectors
         """
-        # Process in parallel
-        tasks = [self.generate_embedding(text) for text in texts]
-        embeddings = await asyncio.gather(*tasks)
-        return embeddings
+        with logging_context(operation="embedding_generation"):
+            start_time = time.time()
+            batch_size = len(texts)
+            total_chars = sum(len(t) for t in texts)
+
+            self.logger.info(
+                "Starting batch embedding generation",
+                extra={
+                    "batch_size": batch_size,
+                    "total_chars": total_chars,
+                    "model": self.embedding_model
+                }
+            )
+
+            try:
+                # Process in parallel
+                tasks = [self.generate_embedding(text) for text in texts]
+                embeddings = await asyncio.gather(*tasks)
+
+                duration = time.time() - start_time
+                avg_time_per_embedding = duration / batch_size if batch_size > 0 else 0
+
+                self.logger.info(
+                    "Batch embedding generation completed",
+                    extra={
+                        "batch_size": batch_size,
+                        "duration_seconds": round(duration, 2),
+                        "avg_time_per_embedding": round(avg_time_per_embedding, 3),
+                        "embeddings_per_second": round(batch_size / duration, 2) if duration > 0 else 0,
+                        "model": self.embedding_model
+                    }
+                )
+
+                return embeddings
+
+            except Exception as e:
+                duration = time.time() - start_time
+                self.logger.error(
+                    "Batch embedding generation failed",
+                    exc_info=True,
+                    extra={
+                        "batch_size": batch_size,
+                        "duration_seconds": round(duration, 2),
+                        "error_type": type(e).__name__,
+                        "model": self.embedding_model,
+                        "host": self.host
+                    }
+                )
+                raise
 
     async def validate_findings(
         self,
