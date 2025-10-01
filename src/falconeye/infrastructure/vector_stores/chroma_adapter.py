@@ -3,12 +3,14 @@
 import json
 from typing import List, Optional, Dict, Any
 from pathlib import Path
+import time
 import chromadb
 from chromadb.config import Settings
 
 from ...domain.repositories.vector_store_repository import VectorStoreRepository
 from ...domain.models.code_chunk import CodeChunk, ChunkMetadata
 from ...domain.models.document import DocumentChunk, DocumentMetadata
+from ..logging import FalconEyeLogger, logging_context
 
 
 class ChromaVectorStoreAdapter(VectorStoreRepository):
@@ -58,6 +60,9 @@ class ChromaVectorStoreAdapter(VectorStoreRepository):
         # Cache for collections
         self._collections: Dict[str, Any] = {}
 
+        # Initialize logger
+        self.logger = FalconEyeLogger.get_instance()
+
     def _get_collection(self, collection: str):
         """
         Get or create a collection with project isolation.
@@ -104,25 +109,64 @@ class ChromaVectorStoreAdapter(VectorStoreRepository):
         if not chunks:
             return
 
-        coll = self._get_collection(collection)
+        with logging_context(operation="vector_store_write"):
+            start_time = time.time()
+            chunk_count = len(chunks)
 
-        # Prepare data for ChromaDB
-        ids = [str(chunk.id) for chunk in chunks]
-        embeddings = [chunk.embedding for chunk in chunks]
-        documents = [chunk.content for chunk in chunks]
-        metadatas = [self._chunk_metadata_to_dict(chunk.metadata) for chunk in chunks]
+            self.logger.info(
+                "Storing chunks in vector store",
+                extra={
+                    "chunk_count": chunk_count,
+                    "collection": collection,
+                    "project_id": self.project_id
+                }
+            )
 
-        # Validate embeddings
-        if any(emb is None for emb in embeddings):
-            raise ValueError("All chunks must have embeddings")
+            try:
+                coll = self._get_collection(collection)
 
-        # Store in ChromaDB
-        coll.add(
-            ids=ids,
-            embeddings=embeddings,
-            documents=documents,
-            metadatas=metadatas,
-        )
+                # Prepare data for ChromaDB
+                ids = [str(chunk.id) for chunk in chunks]
+                embeddings = [chunk.embedding for chunk in chunks]
+                documents = [chunk.content for chunk in chunks]
+                metadatas = [self._chunk_metadata_to_dict(chunk.metadata) for chunk in chunks]
+
+                # Validate embeddings
+                if any(emb is None for emb in embeddings):
+                    raise ValueError("All chunks must have embeddings")
+
+                # Store in ChromaDB
+                coll.add(
+                    ids=ids,
+                    embeddings=embeddings,
+                    documents=documents,
+                    metadatas=metadatas,
+                )
+
+                duration = time.time() - start_time
+                self.logger.info(
+                    "Chunks stored successfully",
+                    extra={
+                        "chunk_count": chunk_count,
+                        "duration_seconds": round(duration, 3),
+                        "chunks_per_second": round(chunk_count / duration, 2) if duration > 0 else 0,
+                        "collection": collection
+                    }
+                )
+
+            except Exception as e:
+                duration = time.time() - start_time
+                self.logger.error(
+                    "Failed to store chunks",
+                    exc_info=True,
+                    extra={
+                        "chunk_count": chunk_count,
+                        "duration_seconds": round(duration, 3),
+                        "error_type": type(e).__name__,
+                        "collection": collection
+                    }
+                )
+                raise
 
     async def search_similar(
         self,
@@ -148,44 +192,81 @@ class ChromaVectorStoreAdapter(VectorStoreRepository):
         Returns:
             List of similar code chunks
         """
-        coll = self._get_collection(collection)
+        with logging_context(operation="vector_store_search"):
+            start_time = time.time()
 
-        # Build where clause if filters provided
-        where = None
-        if filters:
-            where = filters
-
-        # Use embedding search if provided, otherwise use text query
-        # Note: Text query uses ChromaDB's default embedding which may have different dimensions
-        if query_embedding:
-            results = coll.query(
-                query_embeddings=[query_embedding],
-                n_results=top_k,
-                where=where,
-            )
-        else:
-            # This path uses ChromaDB's built-in embedding
-            # For consistency, always provide query_embedding
-            results = coll.query(
-                query_texts=[query],
-                n_results=top_k,
-                where=where,
+            self.logger.info(
+                "Searching vector store",
+                extra={
+                    "top_k": top_k,
+                    "collection": collection,
+                    "has_filters": filters is not None,
+                    "search_type": "embedding" if query_embedding else "text"
+                }
             )
 
-        # Convert results to CodeChunk objects
-        chunks = []
-        if results["ids"] and results["ids"][0]:
-            for i, chunk_id in enumerate(results["ids"][0]):
-                metadata = self._dict_to_chunk_metadata(results["metadatas"][0][i])
-                chunk = CodeChunk.create(
-                    content=results["documents"][0][i],
-                    metadata=metadata,
-                    token_count=len(results["documents"][0][i]) // 4,  # Rough estimate
-                    embedding=results["embeddings"][0][i] if results.get("embeddings") else None,
+            try:
+                coll = self._get_collection(collection)
+
+                # Build where clause if filters provided
+                where = None
+                if filters:
+                    where = filters
+
+                # Use embedding search if provided, otherwise use text query
+                # Note: Text query uses ChromaDB's default embedding which may have different dimensions
+                if query_embedding:
+                    results = coll.query(
+                        query_embeddings=[query_embedding],
+                        n_results=top_k,
+                        where=where,
+                    )
+                else:
+                    # This path uses ChromaDB's built-in embedding
+                    # For consistency, always provide query_embedding
+                    results = coll.query(
+                        query_texts=[query],
+                        n_results=top_k,
+                        where=where,
+                    )
+
+                # Convert results to CodeChunk objects
+                chunks = []
+                if results["ids"] and results["ids"][0]:
+                    for i, chunk_id in enumerate(results["ids"][0]):
+                        metadata = self._dict_to_chunk_metadata(results["metadatas"][0][i])
+                        chunk = CodeChunk.create(
+                            content=results["documents"][0][i],
+                            metadata=metadata,
+                            token_count=len(results["documents"][0][i]) // 4,  # Rough estimate
+                            embedding=results["embeddings"][0][i] if results.get("embeddings") else None,
+                        )
+                        chunks.append(chunk)
+
+                duration = time.time() - start_time
+                self.logger.info(
+                    "Vector search completed",
+                    extra={
+                        "results_found": len(chunks),
+                        "duration_seconds": round(duration, 3),
+                        "collection": collection
+                    }
                 )
-                chunks.append(chunk)
 
-        return chunks
+                return chunks
+
+            except Exception as e:
+                duration = time.time() - start_time
+                self.logger.error(
+                    "Vector search failed",
+                    exc_info=True,
+                    extra={
+                        "duration_seconds": round(duration, 3),
+                        "error_type": type(e).__name__,
+                        "collection": collection
+                    }
+                )
+                raise
 
     async def search_by_embedding(
         self,
