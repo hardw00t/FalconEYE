@@ -34,3 +34,23 @@ class InvalidSecurityFindingError(FalconEyeDomainError):
 class LanguageDetectionError(FalconEyeDomainError):
     """Raised when automatic language detection fails."""
     pass
+
+
+class OllamaServiceError(FalconEyeDomainError):
+    """Base exception for Ollama service errors."""
+    pass
+
+
+class OllamaConnectionError(OllamaServiceError):
+    """Raised when cannot connect to Ollama service."""
+    pass
+
+
+class OllamaModelNotFoundError(OllamaServiceError):
+    """Raised when Ollama model is not found."""
+    pass
+
+
+class OllamaTimeoutError(OllamaServiceError):
+    """Raised when Ollama request times out."""
+    pass
