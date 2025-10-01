@@ -210,7 +210,7 @@ class LoggingConfig(BaseModel):
     """Logging configuration."""
     level: str = Field(
         default="INFO",
-        description="Logging level (DEBUG, INFO, WARNING, ERROR)"
+        description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
     )
     file: str = Field(
         default="./falconeye.log",
@@ -220,15 +220,35 @@ class LoggingConfig(BaseModel):
         default=True,
         description="Enable console logging"
     )
+    rotation: str = Field(
+        default="daily",
+        description="Log rotation strategy (daily, none)"
+    )
+    retention_days: int = Field(
+        default=30,
+        ge=1,
+        le=365,
+        description="Number of days to retain logs"
+    )
 
     @field_validator('level')
     @classmethod
     def validate_level(cls, v):
         """Ensure log level is valid."""
-        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR"]
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         v = v.upper()
         if v not in valid_levels:
             raise ValueError(f"level must be one of {valid_levels}")
+        return v
+
+    @field_validator('rotation')
+    @classmethod
+    def validate_rotation(cls, v):
+        """Ensure rotation strategy is valid."""
+        valid_strategies = ["daily", "none"]
+        v = v.lower()
+        if v not in valid_strategies:
+            raise ValueError(f"rotation must be one of {valid_strategies}")
         return v
 
 

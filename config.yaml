@@ -75,6 +75,8 @@ output:
 
 # Logging
 logging:
-  level: INFO  # Logging level (DEBUG, INFO, WARNING, ERROR)
+  level: INFO  # Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
   file: ./falconeye.log  # Log file path
   console: true  # Enable console logging
+  rotation: daily  # Log rotation strategy (daily, none)
+  retention_days: 30  # Number of days to retain logs
