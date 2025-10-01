@@ -10,6 +10,7 @@ from rich.table import Table
 
 from ...infrastructure.di.container import DIContainer
 from ...infrastructure.config.config_loader import ConfigLoader
+from ...infrastructure.presentation.error_presenter import ErrorPresenter
 from ...application.commands.index_codebase import IndexCodebaseCommand
 from ...application.commands.review_file import ReviewFileCommand
 from ..formatters.formatter_factory import FormatterFactory
@@ -24,6 +25,7 @@ def index_command(
     project_id: Optional[str],
     force_reindex: bool,
     config_path: Optional[str],
+    verbose: bool,
     console: Console,
 ):
     """
@@ -38,6 +40,7 @@ def index_command(
         project_id: Explicit project ID
         force_reindex: Force re-index all files
         config_path: Config file path
+        verbose: Enable verbose output
         console: Rich console
     """
     console.print(Panel.fit(
@@ -86,10 +89,17 @@ def index_command(
             console.print(f"[green]Language: {codebase.language}[/green]")
             console.print(f"[green]Total lines: {codebase.total_lines}[/green]")
 
+        except KeyboardInterrupt:
+            progress.update(task, description="[yellow]Indexing cancelled")
+            error_msg = ErrorPresenter.present(KeyboardInterrupt(), verbose=verbose)
+            console.print(f"\n{error_msg}")
+            raise SystemExit(1)
+
         except Exception as e:
             progress.update(task, description="[red]Indexing failed!")
-            console.print(f"\n[red]Error:[/red] {str(e)}")
-            raise
+            error_msg = ErrorPresenter.present(e, verbose=verbose)
+            console.print(f"\n{error_msg}")
+            raise SystemExit(1)
 
 
 def review_command(
@@ -194,8 +204,18 @@ def review_command(
 
                     progress.advance(task)
 
+                except KeyboardInterrupt:
+                    progress.update(task, description="[yellow]Analysis cancelled")
+                    error_msg = ErrorPresenter.present(KeyboardInterrupt(), verbose=verbose)
+                    console.print(f"\n{error_msg}")
+                    raise SystemExit(1)
+
                 except Exception as e:
-                    console.print(f"\n[yellow]Warning: Failed to analyze {file_path}: {e}[/yellow]")
+                    # For directory scan, show warning and continue
+                    console.print(f"\n[yellow]Warning: Failed to analyze {file_path.name}[/yellow]")
+                    if verbose:
+                        error_msg = ErrorPresenter.present(e, verbose=True)
+                        console.print(error_msg)
                     progress.advance(task)
                     continue
 
@@ -223,10 +243,18 @@ def review_command(
             try:
                 review = asyncio.run(container.review_file_handler.handle(command))
                 progress.update(task, description="[green]Analysis complete!")
+
+            except KeyboardInterrupt:
+                progress.update(task, description="[yellow]Analysis cancelled")
+                error_msg = ErrorPresenter.present(KeyboardInterrupt(), verbose=verbose)
+                console.print(f"\n{error_msg}")
+                raise SystemExit(1)
+
             except Exception as e:
                 progress.update(task, description="[red]Analysis failed!")
-                console.print(f"\n[red]Error:[/red] {str(e)}")
-                raise
+                error_msg = ErrorPresenter.present(e, verbose=verbose)
+                console.print(f"\n{error_msg}")
+                raise SystemExit(1)
 
     # Format output
     formatter = FormatterFactory.create(

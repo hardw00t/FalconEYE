@@ -77,6 +77,11 @@ def index(
         "--config", "-c",
         help="Path to configuration file",
     ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose", "-v",
+        help="Enable verbose output with technical details",
+    ),
 ):
     """
     Index a codebase for analysis.
@@ -93,6 +98,7 @@ def index(
         project_id=project_id,
         force_reindex=force_reindex,
         config_path=config,
+        verbose=verbose,
         console=console,
     )
 
