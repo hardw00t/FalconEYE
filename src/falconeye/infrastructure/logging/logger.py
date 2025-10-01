@@ -20,9 +20,11 @@ import logging
 import logging.handlers
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any, Dict
 from datetime import datetime, timezone
 import threading
+
+from .context import LogContext
 
 
 class JSONFormatter(logging.Formatter):
@@ -209,24 +211,58 @@ class FalconEyeLogger:
                     )
         return cls._instance
 
+    def _merge_context(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Merge LogContext into kwargs['extra'].
+
+        Context fields are added to extra, but explicit extra fields
+        take precedence over context fields.
+
+        Args:
+            kwargs: Logging kwargs (may contain 'extra' dict)
+
+        Returns:
+            Updated kwargs with merged context
+        """
+        # Get current context
+        context = LogContext.get_context()
+
+        if context:
+            # Get existing extra or create new dict
+            extra = kwargs.get('extra', {})
+
+            # Merge context into extra (explicit extra takes precedence)
+            merged_extra = {**context, **extra}
+
+            # Update kwargs
+            kwargs = kwargs.copy()
+            kwargs['extra'] = merged_extra
+
+        return kwargs
+
     def debug(self, message: str, **kwargs):
-        """Log debug message."""
+        """Log debug message with automatic context injection."""
+        kwargs = self._merge_context(kwargs)
         self.logger.debug(message, **kwargs)
 
     def info(self, message: str, **kwargs):
-        """Log info message."""
+        """Log info message with automatic context injection."""
+        kwargs = self._merge_context(kwargs)
         self.logger.info(message, **kwargs)
 
     def warning(self, message: str, **kwargs):
-        """Log warning message."""
+        """Log warning message with automatic context injection."""
+        kwargs = self._merge_context(kwargs)
         self.logger.warning(message, **kwargs)
 
     def error(self, message: str, **kwargs):
-        """Log error message."""
+        """Log error message with automatic context injection."""
+        kwargs = self._merge_context(kwargs)
         self.logger.error(message, **kwargs)
 
     def critical(self, message: str, **kwargs):
-        """Log critical message."""
+        """Log critical message with automatic context injection."""
+        kwargs = self._merge_context(kwargs)
         self.logger.critical(message, **kwargs)
 
 
