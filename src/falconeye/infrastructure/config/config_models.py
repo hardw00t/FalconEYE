@@ -16,6 +16,62 @@ class LLMModelConfig(BaseModel):
     )
 
 
+class RetryConfigModel(BaseModel):
+    """Retry logic configuration."""
+    max_retries: int = Field(
+        default=3,
+        ge=0,
+        le=10,
+        description="Maximum number of retry attempts"
+    )
+    initial_delay: float = Field(
+        default=1.0,
+        ge=0.1,
+        le=60.0,
+        description="Initial delay in seconds before first retry"
+    )
+    max_delay: float = Field(
+        default=30.0,
+        ge=1.0,
+        le=300.0,
+        description="Maximum delay in seconds between retries"
+    )
+    exponential_base: float = Field(
+        default=2.0,
+        ge=1.5,
+        le=3.0,
+        description="Exponential backoff base"
+    )
+    jitter: float = Field(
+        default=0.1,
+        ge=0.0,
+        le=0.5,
+        description="Jitter factor (0.1 = ±10% randomness)"
+    )
+
+
+class CircuitBreakerConfigModel(BaseModel):
+    """Circuit breaker configuration."""
+    failure_threshold: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Number of failures before opening circuit"
+    )
+    success_threshold: int = Field(
+        default=2,
+        ge=1,
+        le=10,
+        description="Number of successes to close circuit from half-open"
+    )
+    timeout: float = Field(
+        default=60.0,
+        ge=10.0,
+        le=600.0,
+        description="Seconds to wait before transitioning to half-open"
+    )
+
+
 class LLMConfig(BaseModel):
     """LLM provider configuration."""
     provider: str = Field(
@@ -37,7 +93,15 @@ class LLMConfig(BaseModel):
         default=3,
         ge=0,
         le=10,
-        description="Maximum number of retries for failed requests"
+        description="[DEPRECATED] Use retry.max_retries instead"
+    )
+    retry: RetryConfigModel = Field(
+        default_factory=RetryConfigModel,
+        description="Retry logic configuration"
+    )
+    circuit_breaker: CircuitBreakerConfigModel = Field(
+        default_factory=CircuitBreakerConfigModel,
+        description="Circuit breaker configuration"
     )
 
 

@@ -11,7 +11,21 @@ llm:
     embedding: embeddinggemma:300m   # Model for generating embeddings
   base_url: http://localhost:11434  # Base URL for LLM API
   timeout: 120  # Request timeout in seconds
-  max_retries: 3  # Maximum number of retries
+  max_retries: 3  # [DEPRECATED] Use retry.max_retries instead
+
+  # Retry Logic with Exponential Backoff
+  retry:
+    max_retries: 3  # Maximum number of retry attempts
+    initial_delay: 1.0  # Initial delay in seconds before first retry
+    max_delay: 30.0  # Maximum delay in seconds between retries
+    exponential_base: 2.0  # Exponential backoff base (2.0 = 1s, 2s, 4s, 8s...)
+    jitter: 0.1  # Jitter factor (0.1 = ±10% randomness to prevent thundering herd)
+
+  # Circuit Breaker Pattern
+  circuit_breaker:
+    failure_threshold: 5  # Number of failures before opening circuit
+    success_threshold: 2  # Number of successes to close circuit from half-open
+    timeout: 60.0  # Seconds to wait before transitioning to half-open
 
 # Vector Store Settings
 vector_store:
