@@ -7,6 +7,7 @@ from pathlib import Path
 from ..config.config_loader import ConfigLoader
 from ..config.config_models import FalconEyeConfig
 from ..llm_providers.ollama_adapter import OllamaLLMAdapter
+from ..resilience import RetryConfig, CircuitBreakerConfig
 from ..vector_stores.chroma_adapter import ChromaVectorStoreAdapter
 from ..persistence.chroma_metadata_repository import ChromaMetadataRepository
 from ..registry.chroma_registry_adapter import ChromaIndexRegistryAdapter
@@ -75,10 +76,31 @@ class DIContainer:
         Path(config.output.output_directory).mkdir(parents=True, exist_ok=True)
 
         # Infrastructure layer - Adapters
+
+        # Create retry config from configuration
+        retry_config = RetryConfig(
+            max_retries=config.llm.retry.max_retries,
+            initial_delay=config.llm.retry.initial_delay,
+            max_delay=config.llm.retry.max_delay,
+            exponential_base=config.llm.retry.exponential_base,
+            jitter=config.llm.retry.jitter,
+            retryable_exceptions=(ConnectionError, TimeoutError, OSError)
+        )
+
+        # Create circuit breaker config from configuration
+        circuit_breaker_config = CircuitBreakerConfig(
+            failure_threshold=config.llm.circuit_breaker.failure_threshold,
+            success_threshold=config.llm.circuit_breaker.success_threshold,
+            timeout=config.llm.circuit_breaker.timeout,
+            exclude_exceptions=(ValueError, TypeError)
+        )
+
         llm_service = OllamaLLMAdapter(
             host=config.llm.base_url,
             chat_model=config.llm.model.analysis,
             embedding_model=config.llm.model.embedding,
+            retry_config=retry_config,
+            circuit_breaker_config=circuit_breaker_config,
         )
 
         vector_store = ChromaVectorStoreAdapter(

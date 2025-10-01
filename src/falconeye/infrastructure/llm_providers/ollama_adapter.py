@@ -7,6 +7,12 @@ import ollama
 from ...domain.services.llm_service import LLMService
 from ...domain.models.prompt import PromptContext
 from ..logging import FalconEyeLogger, logging_context
+from ..resilience import (
+    retry_with_backoff,
+    RetryConfig,
+    CircuitBreaker,
+    CircuitBreakerConfig,
+)
 
 
 class OllamaLLMAdapter(LLMService):
@@ -29,6 +35,8 @@ class OllamaLLMAdapter(LLMService):
         chat_max_tokens: int = 256000,
         temperature: float = 0.0,
         max_response_tokens: int = 8192,
+        retry_config: RetryConfig = None,
+        circuit_breaker_config: CircuitBreakerConfig = None,
     ):
         """
         Initialize Ollama adapter.
@@ -40,6 +48,8 @@ class OllamaLLMAdapter(LLMService):
             chat_max_tokens: Context window size
             temperature: Sampling temperature (0.0 = deterministic)
             max_response_tokens: Max tokens in response
+            retry_config: Retry configuration (uses defaults if None)
+            circuit_breaker_config: Circuit breaker configuration (uses defaults if None)
         """
         self.host = host
         self.chat_model = chat_model
@@ -53,6 +63,28 @@ class OllamaLLMAdapter(LLMService):
 
         # Initialize logger
         self.logger = FalconEyeLogger.get_instance()
+
+        # Initialize retry configuration
+        self.retry_config = retry_config if retry_config else RetryConfig(
+            max_retries=3,
+            initial_delay=1.0,
+            max_delay=30.0,
+            exponential_base=2.0,
+            jitter=0.1,
+            retryable_exceptions=(ConnectionError, TimeoutError, OSError)
+        )
+
+        # Initialize circuit breaker for LLM calls
+        cb_config = circuit_breaker_config if circuit_breaker_config else CircuitBreakerConfig(
+            failure_threshold=5,
+            success_threshold=2,
+            timeout=60.0,
+            exclude_exceptions=(ValueError, TypeError)
+        )
+        self.circuit_breaker = CircuitBreaker(
+            name="ollama_llm",
+            config=cb_config
+        )
 
     async def analyze_code_security(
         self,
@@ -332,7 +364,11 @@ Create a concise but comprehensive summary of all identified issues."""
         user_prompt: str,
     ) -> str:
         """
-        Internal method to call Ollama API.
+        Internal method to call Ollama API with retry and circuit breaker.
+
+        This method is protected by:
+        - Circuit breaker: Prevents calls when service is down
+        - Retry logic: Automatically retries on transient failures
 
         Args:
             system_prompt: System instructions
@@ -340,25 +376,35 @@ Create a concise but comprehensive summary of all identified issues."""
 
         Returns:
             AI response text
+
+        Raises:
+            CircuitBreakerError: If circuit breaker is open
+            ConnectionError: If all retries exhausted
         """
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
+        # Apply circuit breaker and retry protection
+        @self.circuit_breaker.protect
+        @retry_with_backoff(self.retry_config)
+        async def _call_with_protection():
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ]
 
-        # Run in executor to avoid blocking
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: self.client.chat(
-                model=self.chat_model,
-                messages=messages,
-                options={
-                    "temperature": self.temperature,
-                    "num_ctx": self.chat_max_tokens,
-                    "num_predict": self.max_response_tokens,
-                },
+            # Run in executor to avoid blocking
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.client.chat(
+                    model=self.chat_model,
+                    messages=messages,
+                    options={
+                        "temperature": self.temperature,
+                        "num_ctx": self.chat_max_tokens,
+                        "num_predict": self.max_response_tokens,
+                    },
+                )
             )
-        )
 
-        return response["message"]["content"]
+            return response["message"]["content"]
+
+        return await _call_with_protection()
