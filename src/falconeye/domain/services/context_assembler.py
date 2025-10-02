@@ -1,11 +1,13 @@
 """Context assembler domain service."""
 
 from typing import List, Optional, Dict, Any
+import time
 from ..models.prompt import PromptContext
 from ..models.code_chunk import CodeChunk
 from ..models.structural import StructuralMetadata
 from ..repositories.vector_store_repository import VectorStoreRepository
 from ..repositories.metadata_repository import MetadataRepository
+from ...infrastructure.logging import FalconEyeLogger
 
 
 class ContextAssembler:
@@ -36,6 +38,7 @@ class ContextAssembler:
         """
         self.vector_store = vector_store
         self.metadata_repo = metadata_repo
+        self.logger = FalconEyeLogger.get_instance()
 
     async def assemble_context(
         self,
@@ -65,6 +68,20 @@ class ContextAssembler:
         Returns:
             PromptContext with all assembled information
         """
+        start_time = time.time()
+
+        # Log start
+        self.logger.info(
+            "Starting context assembly",
+            extra={
+                "file_path": file_path,
+                "language": language,
+                "code_size": len(code_snippet),
+                "top_k_similar": top_k_similar,
+                "analysis_type": analysis_type,
+            }
+        )
+
         # Get structural metadata
         structural_metadata = await self._get_structural_metadata(file_path)
 
@@ -93,6 +110,21 @@ class ContextAssembler:
             analysis_type=analysis_type,
         )
 
+        # Calculate duration
+        duration = time.time() - start_time
+
+        # Log completion with metrics
+        self.logger.info(
+            "Context assembly completed",
+            extra={
+                "file_path": file_path,
+                "has_metadata": structural_metadata is not None,
+                "has_related_code": related_code is not None,
+                "has_related_docs": related_docs is not None,
+                "duration_seconds": round(duration, 2),
+            }
+        )
+
         return context
 
     async def _get_structural_metadata(
@@ -115,10 +147,22 @@ class ContextAssembler:
         Returns:
             Structural metadata dict or None
         """
-        metadata = await self.metadata_repo.get_metadata(file_path)
-        if metadata:
-            return metadata.to_dict()
-        return None
+        try:
+            metadata = await self.metadata_repo.get_metadata(file_path)
+            if metadata:
+                return metadata.to_dict()
+            return None
+        except Exception as e:
+            # Log but don't fail - metadata is optional for context
+            self.logger.warning(
+                "Failed to retrieve structural metadata",
+                extra={
+                    "file_path": file_path,
+                    "error": str(e),
+                },
+                exc_info=True
+            )
+            return None
 
     async def _get_related_code(
         self,
@@ -182,7 +226,14 @@ class ContextAssembler:
 
         except Exception as e:
             # Don't fail if RAG retrieval fails
-            print(f"Warning: Failed to retrieve related code: {e}")
+            self.logger.warning(
+                "Failed to retrieve related code",
+                extra={
+                    "current_file": current_file,
+                    "error": str(e),
+                },
+                exc_info=True
+            )
             return None
 
     async def _get_related_documentation(
@@ -238,7 +289,13 @@ class ContextAssembler:
 
         except Exception as e:
             # Don't fail if documentation retrieval fails
-            print(f"Warning: Failed to retrieve related documentation: {e}")
+            self.logger.warning(
+                "Failed to retrieve related documentation",
+                extra={
+                    "error": str(e),
+                },
+                exc_info=True
+            )
             return None
 
     async def assemble_multi_file_context(
