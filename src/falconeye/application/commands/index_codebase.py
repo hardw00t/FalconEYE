@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 import asyncio
+import time
 
 from ...domain.models.codebase import Codebase, CodeFile
 from ...domain.models.code_chunk import CodeChunk, ChunkMetadata
@@ -17,6 +18,7 @@ from ...domain.repositories.metadata_repository import MetadataRepository
 from ...domain.repositories.index_registry import IndexRegistryRepository
 from ...domain.value_objects.project_metadata import ProjectMetadata, FileMetadata, FileStatus
 from ...infrastructure.ast.ast_analyzer import EnhancedASTAnalyzer
+from ...infrastructure.logging import FalconEyeLogger
 
 
 @dataclass
@@ -90,6 +92,7 @@ class IndexCodebaseHandler:
         self.project_identifier = project_identifier
         self.checksum_service = checksum_service
         self.index_registry = index_registry
+        self.logger = FalconEyeLogger.get_instance()
 
     async def handle(self, command: IndexCodebaseCommand) -> Codebase:
         """
@@ -108,7 +111,18 @@ class IndexCodebaseHandler:
         4. Process only changed/new files (or all if force_reindex=True)
         5. Update registry with new metadata
         """
-        print(f"Indexing codebase: {command.codebase_path}")
+        start_time = time.time()
+
+        self.logger.info(
+            "Starting codebase indexing",
+            extra={
+                "codebase_path": str(command.codebase_path),
+                "language": command.language,
+                "force_reindex": command.force_reindex,
+                "include_documents": command.include_documents,
+                "chunk_size": command.chunk_size,
+            }
+        )
 
         # Step 1: Identify project
         project_id, project_name, project_type, git_remote_url = \
@@ -117,8 +131,15 @@ class IndexCodebaseHandler:
                 explicit_id=command.project_id
             )
 
-        print(f"Project ID: {project_id}")
-        print(f"Project type: {project_type.value}")
+        self.logger.info(
+            "Project identified",
+            extra={
+                "project_id": project_id,
+                "project_name": project_name,
+                "project_type": project_type.value,
+                "git_remote_url": git_remote_url,
+            }
+        )
 
         # Step 2: Detect language
         if command.language:
@@ -126,33 +147,69 @@ class IndexCodebaseHandler:
         else:
             language = self.language_detector.detect_language(command.codebase_path)
 
-        print(f"Detected language: {language}")
+        self.logger.info(
+            "Language detected",
+            extra={
+                "language": language,
+                "auto_detected": command.language is None,
+            }
+        )
 
         # Step 3: Check registry for previous indexing
         existing_project = self.index_registry.get_project(project_id)
         is_first_time = existing_project is None
 
         if is_first_time:
-            print("First-time indexing for this project")
+            self.logger.info(
+                "First-time indexing for project",
+                extra={"project_id": project_id}
+            )
         else:
             last_indexed = existing_project.indexed_at if hasattr(existing_project, 'indexed_at') else "unknown"
-            print(f"Re-indexing (last indexed: {last_indexed})")
+            self.logger.info(
+                "Re-indexing existing project",
+                extra={
+                    "project_id": project_id,
+                    "last_indexed": str(last_indexed),
+                }
+            )
 
         # Step 4: Discover current files
         files = self._discover_files(command.codebase_path, language, command.excluded_patterns or [])
-        print(f"Found {len(files)} code files")
+
+        self.logger.info(
+            "File discovery completed",
+            extra={
+                "files_found": len(files),
+                "language": language,
+            }
+        )
 
         # Step 5: Determine which files to process
         if command.force_reindex or is_first_time:
             files_to_process = files
             skipped_count = 0
-            print(f"Processing all {len(files)} files (force={command.force_reindex}, first_time={is_first_time})")
+            self.logger.info(
+                "Processing all files",
+                extra={
+                    "total_files": len(files),
+                    "force_reindex": command.force_reindex,
+                    "first_time": is_first_time,
+                }
+            )
         else:
             # Smart re-indexing: only process changed/new files
             files_to_process, skipped_count = await self._filter_changed_files(
                 project_id, files, command.codebase_path
             )
-            print(f"Smart re-index: {len(files_to_process)} changed/new, {skipped_count} unchanged")
+            self.logger.info(
+                "Smart re-index analysis completed",
+                extra={
+                    "files_to_process": len(files_to_process),
+                    "files_skipped": skipped_count,
+                    "total_files": len(files),
+                }
+            )
 
         # Step 6: Handle deleted files
         if not is_first_time and not command.force_reindex:
@@ -178,7 +235,11 @@ class IndexCodebaseHandler:
         doc_count = 0
         if command.include_documents:
             doc_files = self._discover_documents(command.codebase_path, command.excluded_patterns or [])
-            print(f"Found {len(doc_files)} documentation files")
+
+            self.logger.info(
+                "Document discovery completed",
+                extra={"documents_found": len(doc_files)}
+            )
 
             for doc_path in doc_files:
                 await self._process_document(doc_path, command)
@@ -198,12 +259,21 @@ class IndexCodebaseHandler:
         )
         self.index_registry.save_project(project_metadata)
 
-        print(f"\nIndexing complete:")
-        print(f"  Project: {project_name} ({project_id})")
-        print(f"  Files processed: {len(files_to_process)}")
-        print(f"  Files skipped: {skipped_count}")
-        print(f"  Documents: {doc_count}")
-        print(f"  Total files: {codebase.total_files}, Total lines: {codebase.total_lines}")
+        # Calculate duration
+        duration = time.time() - start_time
+
+        self.logger.info(
+            "Codebase indexing completed",
+            extra={
+                "project_id": project_id,
+                "project_name": project_name,
+                "files_processed": len(files_to_process),
+                "files_skipped": skipped_count,
+                "documents_processed": doc_count,
+                "total_chunks": sum(f.chunk_count for f in processed_files),
+                "duration_seconds": round(duration, 2),
+            }
+        )
 
         return codebase
 
@@ -228,12 +298,23 @@ class IndexCodebaseHandler:
         Returns:
             FileMetadata if successful, None otherwise
         """
+        start_time = time.time()
+        relative_path = file_path.relative_to(command.codebase_path)
+
         try:
+            self.logger.info(
+                "Starting file processing",
+                extra={
+                    "file_path": str(relative_path),
+                    "language": language,
+                    "project_id": project_id,
+                }
+            )
+
             # Read file
             content = file_path.read_text(encoding="utf-8")
 
             # Create code file
-            relative_path = file_path.relative_to(command.codebase_path)
             code_file = CodeFile.create(
                 path=file_path,
                 relative_path=str(relative_path),
@@ -258,6 +339,15 @@ class IndexCodebaseHandler:
                 language=language,
                 chunk_size=command.chunk_size,
                 overlap=command.chunk_overlap,
+            )
+
+            self.logger.info(
+                "File chunked",
+                extra={
+                    "file_path": str(relative_path),
+                    "chunk_count": len(chunks),
+                    "chunk_size": command.chunk_size,
+                }
             )
 
             # Generate embeddings in batch
@@ -306,12 +396,32 @@ class IndexCodebaseHandler:
             # Save to registry
             self.index_registry.save_file(file_metadata)
 
-            print(f"  Processed: {relative_path} ({len(chunks)} chunks)")
+            # Calculate duration
+            duration = time.time() - start_time
+
+            self.logger.info(
+                "File processing completed",
+                extra={
+                    "file_path": str(relative_path),
+                    "chunk_count": len(chunks),
+                    "file_size": file_metadata.file_size,
+                    "duration_seconds": round(duration, 2),
+                }
+            )
 
             return file_metadata
 
         except Exception as e:
-            print(f"  Error processing {file_path}: {e}")
+            duration = time.time() - start_time
+            self.logger.error(
+                "File processing failed",
+                extra={
+                    "file_path": str(relative_path),
+                    "error": str(e),
+                    "duration_seconds": round(duration, 2),
+                },
+                exc_info=True
+            )
             return None
 
     async def _filter_changed_files(
@@ -377,16 +487,36 @@ class IndexCodebaseHandler:
         )
 
         if deleted_files:
-            print(f"\nDetected {len(deleted_files)} deleted files:")
+            self.logger.info(
+                "Deleted files detected",
+                extra={
+                    "project_id": project_id,
+                    "deleted_count": len(deleted_files),
+                }
+            )
+
             for deleted_file in deleted_files:
                 relative_path = deleted_file.relative_to(project_root) if deleted_file.is_absolute() else deleted_file
-                print(f"  - {relative_path}")
 
                 # Mark as deleted in registry
                 self.index_registry.mark_file_deleted(project_id, deleted_file)
 
-            # TODO: In Phase 6, add user prompt to delete embeddings from vector store
-            print("  (Embeddings marked for cleanup - use 'falconeye projects cleanup' to remove)")
+                self.logger.info(
+                    "File marked as deleted",
+                    extra={
+                        "file_path": str(relative_path),
+                        "project_id": project_id,
+                    }
+                )
+
+            self.logger.warning(
+                "Deleted file embeddings marked for cleanup",
+                extra={
+                    "project_id": project_id,
+                    "deleted_count": len(deleted_files),
+                    "cleanup_command": "falconeye projects cleanup",
+                }
+            )
 
     def _get_current_commit(self, project_root: Path) -> Optional[str]:
         """
@@ -600,23 +730,46 @@ class IndexCodebaseHandler:
             doc_path: Path to document
             command: Index command with settings
         """
+        start_time = time.time()
+        relative_path = str(doc_path.relative_to(command.codebase_path))
+
         try:
             # Skip binary files based on extension
             binary_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico',
                                '.pdf', '.zip', '.tar', '.gz', '.exe', '.bin',
                                '.woff', '.woff2', '.ttf', '.eot', '.svg'}
             if doc_path.suffix.lower() in binary_extensions:
+                self.logger.info(
+                    "Skipping binary document",
+                    extra={
+                        "file_path": relative_path,
+                        "extension": doc_path.suffix,
+                    }
+                )
                 return
 
             # Read document with error handling
             try:
                 content = doc_path.read_text(encoding="utf-8")
             except UnicodeDecodeError:
-                # Skip files that can't be decoded as text
+                self.logger.warning(
+                    "Skipping document with encoding error",
+                    extra={
+                        "file_path": relative_path,
+                        "error": "UnicodeDecodeError",
+                    }
+                )
                 return
 
+            self.logger.info(
+                "Starting document processing",
+                extra={
+                    "file_path": relative_path,
+                    "doc_size": len(content),
+                }
+            )
+
             # Determine document type
-            relative_path = str(doc_path.relative_to(command.codebase_path))
             doc_type = self._classify_document(doc_path.name, relative_path)
 
             # Create document
@@ -650,10 +803,30 @@ class IndexCodebaseHandler:
                 collection="documents"
             )
 
-            print(f"  Processed document: {relative_path} ({len(chunks)} chunks)")
+            # Calculate duration
+            duration = time.time() - start_time
+
+            self.logger.info(
+                "Document processing completed",
+                extra={
+                    "file_path": relative_path,
+                    "doc_type": doc_type,
+                    "chunk_count": len(chunks),
+                    "duration_seconds": round(duration, 2),
+                }
+            )
 
         except Exception as e:
-            print(f"  Error processing document {doc_path}: {e}")
+            duration = time.time() - start_time
+            self.logger.error(
+                "Document processing failed",
+                extra={
+                    "file_path": relative_path,
+                    "error": str(e),
+                    "duration_seconds": round(duration, 2),
+                },
+                exc_info=True
+            )
 
     def _classify_document(self, filename: str, relative_path: str) -> str:
         """
