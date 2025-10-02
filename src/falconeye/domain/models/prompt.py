@@ -70,13 +70,16 @@ class PromptContext:
         and identify security vulnerabilities through reasoning,
         NOT through pattern matching.
         """
+        # Add line numbers to code snippet for AI to reference
+        numbered_code = self._add_line_numbers(self.code_snippet)
+
         parts = [
             f"FILE: {self.file_path}",
             f"LANGUAGE: {self.language}",
             f"ANALYSIS TYPE: {self.analysis_type}",
             "",
-            "CODE:",
-            self.code_snippet,
+            "CODE (with line numbers):",
+            numbered_code,
         ]
 
         if self.original_file:
@@ -127,3 +130,22 @@ class PromptContext:
             ])
 
         return "\n".join(parts)
+
+    def _add_line_numbers(self, code: str) -> str:
+        """
+        Add line numbers to code for AI to reference.
+
+        This allows the AI to provide accurate line_start and line_end
+        in its findings.
+
+        Args:
+            code: Code snippet
+
+        Returns:
+            Code with line numbers prepended to each line
+        """
+        lines = code.splitlines()
+        numbered_lines = []
+        for i, line in enumerate(lines, start=1):
+            numbered_lines.append(f"{i:4d} | {line}")
+        return "\n".join(numbered_lines)
