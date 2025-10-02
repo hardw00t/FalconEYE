@@ -2,10 +2,12 @@
 
 from typing import List
 import json
+import time
 from ..models.security import SecurityFinding, SecurityReview, Severity, FindingConfidence
 from ..models.prompt import PromptContext
 from .llm_service import LLMService
 from ..exceptions import AnalysisError, InvalidSecurityFindingError
+from ...infrastructure.logging import FalconEyeLogger
 
 
 class SecurityAnalyzer:
@@ -24,6 +26,7 @@ class SecurityAnalyzer:
             llm_service: LLM service for AI analysis
         """
         self.llm_service = llm_service
+        self.logger = FalconEyeLogger.get_instance()
 
     async def analyze_code(
         self,
@@ -46,6 +49,18 @@ class SecurityAnalyzer:
         Raises:
             AnalysisError: If AI analysis fails
         """
+        start_time = time.time()
+
+        # Log start
+        self.logger.info(
+            "Starting security analysis",
+            extra={
+                "file_path": context.file_path,
+                "language": context.language,
+                "code_size": len(context.code_snippet),
+            }
+        )
+
         try:
             # Get AI analysis
             raw_response = await self.llm_service.analyze_code_security(
@@ -55,9 +70,54 @@ class SecurityAnalyzer:
 
             # Parse AI response into findings
             findings = self._parse_findings(raw_response, context.file_path)
+
+            # Calculate duration
+            duration = time.time() - start_time
+
+            # Group findings by severity
+            severity_counts = {}
+            for finding in findings:
+                severity = finding.severity.value
+                severity_counts[severity] = severity_counts.get(severity, 0) + 1
+
+            # Log completion
+            self.logger.info(
+                "Security analysis completed",
+                extra={
+                    "file_path": context.file_path,
+                    "findings_count": len(findings),
+                    "severity_counts": severity_counts,
+                    "duration_seconds": round(duration, 2),
+                }
+            )
+
             return findings
 
+        except InvalidSecurityFindingError as e:
+            duration = time.time() - start_time
+            self.logger.error(
+                "Failed to parse AI response",
+                extra={
+                    "file_path": context.file_path,
+                    "error": str(e),
+                    "duration_seconds": round(duration, 2),
+                },
+                exc_info=True
+            )
+            # Return empty findings instead of crashing
+            return []
+
         except Exception as e:
+            duration = time.time() - start_time
+            self.logger.error(
+                "Security analysis failed",
+                extra={
+                    "file_path": context.file_path,
+                    "error": str(e),
+                    "duration_seconds": round(duration, 2),
+                },
+                exc_info=True
+            )
             raise AnalysisError(f"AI analysis failed: {str(e)}") from e
 
     async def validate_findings(
@@ -158,7 +218,14 @@ class SecurityAnalyzer:
                     findings.append(finding)
                 except Exception as e:
                     # Log but don't fail on single malformed finding
-                    print(f"Warning: Skipping malformed finding: {e}")
+                    self.logger.warning(
+                        "Skipping malformed finding",
+                        extra={
+                            "file_path": file_path,
+                            "error": str(e),
+                            "review_data": review,
+                        }
+                    )
                     continue
 
             return findings
