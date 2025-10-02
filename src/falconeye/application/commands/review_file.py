@@ -2,11 +2,13 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+import time
 
 from ...domain.models.security import SecurityReview
 from ...domain.models.prompt import PromptContext
 from ...domain.services.security_analyzer import SecurityAnalyzer
 from ...domain.services.context_assembler import ContextAssembler
+from ...infrastructure.logging import FalconEyeLogger
 
 
 @dataclass
@@ -49,6 +51,7 @@ class ReviewFileHandler:
         """
         self.security_analyzer = security_analyzer
         self.context_assembler = context_assembler
+        self.logger = FalconEyeLogger.get_instance()
 
     async def handle(self, command: ReviewFileCommand) -> SecurityReview:
         """
@@ -60,7 +63,18 @@ class ReviewFileHandler:
         Returns:
             SecurityReview with AI-identified findings
         """
-        print(f"Reviewing file: {command.file_path}")
+        start_time = time.time()
+
+        # Log start
+        self.logger.info(
+            "Starting file review",
+            extra={
+                "file_path": str(command.file_path),
+                "language": command.language,
+                "validate_findings": command.validate_findings,
+                "top_k_context": command.top_k_context,
+            }
+        )
 
         # Read file
         content = command.file_path.read_text(encoding="utf-8")
@@ -92,7 +106,14 @@ class ReviewFileHandler:
 
         # Optional validation
         if command.validate_findings and findings:
-            print("  Validating findings with AI...")
+            self.logger.info(
+                "Validating findings with AI",
+                extra={
+                    "file_path": str(command.file_path),
+                    "findings_count": len(findings),
+                }
+            )
+
             validated_findings = await self.security_analyzer.validate_findings(
                 findings=findings,
                 context=context,
@@ -104,6 +125,18 @@ class ReviewFileHandler:
         review.files_analyzed = 1
         review.complete()
 
-        print(f"  Found {len(review.findings)} issues")
+        # Calculate duration
+        duration = time.time() - start_time
+
+        # Log completion
+        self.logger.info(
+            "File review completed",
+            extra={
+                "file_path": str(command.file_path),
+                "findings_count": len(review.findings),
+                "validated": command.validate_findings,
+                "duration_seconds": round(duration, 2),
+            }
+        )
 
         return review
