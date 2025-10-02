@@ -317,6 +317,7 @@ def scan_command(
         project_id=project_id,
         force_reindex=force_reindex,
         config_path=config_path,
+        verbose=verbose,
         console=console,
     )
 
