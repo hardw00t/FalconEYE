@@ -262,7 +262,7 @@ class ChromaMetadataRepository(MetadataRepository):
         """
         from ...domain.models.structural import (
             FunctionInfo, ImportInfo, CallInfo, ClassInfo,
-            ControlFlowNode, DataFlowInfo
+            DataFlowInfo
         )
 
         metadata = StructuralMetadata(

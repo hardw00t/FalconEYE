@@ -1,7 +1,7 @@
 """LLM service interface (Port)."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List
 from ..models.prompt import PromptContext
 
 

@@ -1,7 +1,5 @@
 """Console formatter with rich, colored output."""
 
-from typing import Optional
-from datetime import datetime
 from ...domain.models.security import SecurityReview, SecurityFinding, Severity
 from .base_formatter import OutputFormatter
 

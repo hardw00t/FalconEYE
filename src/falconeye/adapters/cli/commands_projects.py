@@ -1,7 +1,5 @@
 """CLI commands for project management."""
 
-import asyncio
-from pathlib import Path
 from typing import Optional
 from rich.console import Console
 from rich.table import Table
@@ -148,7 +146,7 @@ def projects_info_command(
         # Get statistics
         stats = registry.get_project_stats(project_id)
         if stats:
-            console.print(f"\n[bold]File Status[/bold]")
+            console.print("\n[bold]File Status[/bold]")
             console.print(f"  Indexed: [green]{stats.get('indexed', 0)}[/green]")
             if stats.get('deleted', 0) > 0:
                 console.print(f"  Deleted: [red]{stats.get('deleted', 0)}[/red]")
@@ -193,7 +191,7 @@ def projects_delete_command(
 
         # Confirm deletion
         if not yes:
-            console.print(f"\n[yellow]Warning:[/yellow] This will delete all indexed data for:")
+            console.print("\n[yellow]Warning:[/yellow] This will delete all indexed data for:")
             console.print(f"  Project: {project.project_name}")
             console.print(f"  Files: {project.total_files}")
             console.print(f"  Chunks: {project.total_chunks}")
@@ -252,7 +250,7 @@ def projects_cleanup_command(
         deleted_files = registry.get_files_by_status(project_id, FileStatus.DELETED)
 
         if not deleted_files:
-            console.print(f"\n[green]No deleted files to clean up.[/green]")
+            console.print("\n[green]No deleted files to clean up.[/green]")
             return
 
         # Confirm cleanup

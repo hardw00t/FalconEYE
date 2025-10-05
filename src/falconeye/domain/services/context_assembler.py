@@ -3,8 +3,6 @@
 from typing import List, Optional, Dict, Any
 import time
 from ..models.prompt import PromptContext
-from ..models.code_chunk import CodeChunk
-from ..models.structural import StructuralMetadata
 from ..repositories.vector_store_repository import VectorStoreRepository
 from ..repositories.metadata_repository import MetadataRepository
 from ...infrastructure.logging import FalconEyeLogger

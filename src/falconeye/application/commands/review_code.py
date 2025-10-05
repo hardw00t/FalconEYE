@@ -2,8 +2,6 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
-import asyncio
 
 from ...domain.models.security import SecurityReview
 from ...domain.services.security_analyzer import SecurityAnalyzer

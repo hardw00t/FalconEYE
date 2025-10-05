@@ -1,7 +1,7 @@
 """Enhanced AST analyzer with control flow and data flow analysis."""
 
 from pathlib import Path
-from typing import Optional, List, Set
+from typing import List
 import tree_sitter_language_pack
 
 from ...domain.models.structural import (
@@ -11,7 +11,6 @@ from ...domain.models.structural import (
     CallInfo,
     ClassInfo,
     ControlFlowNode,
-    DataFlowInfo,
 )
 
 
@@ -121,8 +120,6 @@ class EnhancedASTAnalyzer:
 
     def _analyze_python(self, root, content: str, metadata: StructuralMetadata):
         """Analyze Python code."""
-        cursor = root.walk()
-
         # Extract functions
         functions = self._find_nodes_by_type(root, "function_definition")
         for func_node in functions:

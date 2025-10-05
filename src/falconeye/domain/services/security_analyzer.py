@@ -3,7 +3,7 @@
 from typing import List
 import json
 import time
-from ..models.security import SecurityFinding, SecurityReview, Severity, FindingConfidence
+from ..models.security import SecurityFinding, Severity, FindingConfidence
 from ..models.prompt import PromptContext
 from .llm_service import LLMService
 from ..exceptions import AnalysisError, InvalidSecurityFindingError

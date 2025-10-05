@@ -5,9 +5,7 @@ from pathlib import Path
 from typing import Optional
 import typer
 from rich.console import Console
-from rich.panel import Panel
 
-from ...infrastructure.di.container import DIContainer
 from .commands import (
     index_command,
     review_command,

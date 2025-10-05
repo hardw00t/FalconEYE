@@ -7,7 +7,6 @@ Supports verbose mode for technical details.
 
 import traceback
 from typing import Tuple, List
-from pathlib import Path
 
 from ...domain.exceptions import (
     OllamaConnectionError,
