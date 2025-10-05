@@ -11,7 +11,7 @@ import hashlib
 from pathlib import Path
 from typing import Optional, Set
 
-from ..value_objects.project_metadata import FileMetadata, ProjectType
+from ..value_objects.project_metadata import FileMetadata
 
 
 class ChecksumService:

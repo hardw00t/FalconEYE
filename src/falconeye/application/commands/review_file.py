@@ -5,7 +5,6 @@ from pathlib import Path
 import time
 
 from ...domain.models.security import SecurityReview
-from ...domain.models.prompt import PromptContext
 from ...domain.services.security_analyzer import SecurityAnalyzer
 from ...domain.services.context_assembler import ContextAssembler
 from ...infrastructure.logging import FalconEyeLogger

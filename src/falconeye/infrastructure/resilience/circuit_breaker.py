@@ -6,7 +6,6 @@ after a threshold is reached, then allowing periodic test calls.
 """
 
 import time
-import asyncio
 from enum import Enum
 from dataclasses import dataclass
 from typing import Optional, Callable, Any

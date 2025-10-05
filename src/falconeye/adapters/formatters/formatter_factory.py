@@ -1,6 +1,5 @@
 """Factory for creating output formatters."""
 
-from typing import Optional
 from .base_formatter import OutputFormatter
 from .console_formatter import ConsoleFormatter
 from .json_formatter import JSONFormatter

@@ -6,7 +6,6 @@ from typing import Optional
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.panel import Panel
-from rich.table import Table
 
 from ...infrastructure.di.container import DIContainer
 from ...infrastructure.config.config_loader import ConfigLoader
@@ -153,7 +152,6 @@ def review_command(
     # Check if path is directory or file
     if path.is_dir():
         # Directory - review all files
-        from pathlib import Path as PathlibPath
 
         # Get file extensions for language
         extensions = container.language_detector.LANGUAGE_EXTENSIONS.get(language, [])
@@ -370,11 +368,11 @@ def info_command(config_path: Optional[str], console: Console):
         try:
             is_healthy = asyncio.run(container.llm_service.health_check())
             if is_healthy:
-                console.print(f"  Status: [green]Connected[/green]")
+                console.print("  Status: [green]Connected[/green]")
             else:
-                console.print(f"  Status: [red]Not available[/red]")
+                console.print("  Status: [red]Not available[/red]")
         except Exception:
-            console.print(f"  Status: [red]Connection failed[/red]")
+            console.print("  Status: [red]Connection failed[/red]")
 
         # Language support
         console.print("\n[bold]Supported Languages:[/bold]")

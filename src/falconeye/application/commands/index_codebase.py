@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
-import asyncio
 import time
 
 from ...domain.models.codebase import Codebase, CodeFile

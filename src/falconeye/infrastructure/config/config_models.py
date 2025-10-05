@@ -1,7 +1,7 @@
 """Configuration data models using Pydantic."""
 
-from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator
+from typing import List
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class LLMModelConfig(BaseModel):
@@ -318,6 +318,11 @@ class LoggingConfig(BaseModel):
 
 class FalconEyeConfig(BaseModel):
     """Complete FalconEYE configuration."""
+    model_config = ConfigDict(
+        extra="forbid",  # Forbid extra fields
+        validate_assignment=True  # Validate on assignment
+    )
+
     llm: LLMConfig = Field(default_factory=LLMConfig)
     vector_store: VectorStoreConfig = Field(default_factory=VectorStoreConfig)
     metadata: MetadataConfig = Field(default_factory=MetadataConfig)
@@ -328,11 +333,6 @@ class FalconEyeConfig(BaseModel):
     file_discovery: FileDiscoveryConfig = Field(default_factory=FileDiscoveryConfig)
     output: OutputConfig = Field(default_factory=OutputConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
-
-    class Config:
-        """Pydantic configuration."""
-        extra = "forbid"  # Forbid extra fields
-        validate_assignment = True  # Validate on assignment
 
     def to_yaml(self) -> str:
         """Convert configuration to YAML string."""

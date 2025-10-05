@@ -51,10 +51,10 @@ class LanguageDetector:
         force_language: Optional[str] = None,
     ) -> str:
         """
-        Detect the primary language of a codebase.
+        Detect the primary language of a codebase or single file.
 
         Args:
-            codebase_path: Root path of codebase
+            codebase_path: Root path of codebase or single file
             force_language: Force specific language (skip detection)
 
         Returns:
@@ -70,7 +70,17 @@ class LanguageDetector:
                 )
             return force_language
 
-        # Count files by language
+        # If single file, detect from extension
+        if codebase_path.is_file():
+            extension = codebase_path.suffix.lower()
+            language = self.EXTENSION_TO_LANGUAGE.get(extension)
+            if not language:
+                raise LanguageDetectionError(
+                    f"Unsupported file type: {extension}"
+                )
+            return language
+
+        # Count files by language (for directories)
         language_counts = self._count_files_by_language(codebase_path)
 
         if not language_counts:
