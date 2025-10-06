@@ -77,6 +77,7 @@ Thumbs.db
 # Documentation builds
 docs/_build/
 docs/.doctrees/
+docs/*
 
 # Jupyter
 .ipynb_checkpoints/
