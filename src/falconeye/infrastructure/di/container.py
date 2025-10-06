@@ -20,7 +20,6 @@ from ...domain.services.project_identifier import ProjectIdentifier
 from ...domain.services.checksum_service import ChecksumService
 from ...application.commands.index_codebase import IndexCodebaseHandler
 from ...application.commands.review_file import ReviewFileHandler
-from ...application.commands.review_code import ReviewCodeHandler
 
 
 @dataclass
@@ -53,7 +52,6 @@ class DIContainer:
     # Application Handlers
     index_handler: IndexCodebaseHandler
     review_file_handler: ReviewFileHandler
-    review_code_handler: ReviewCodeHandler
 
     @classmethod
     def create(cls, config_path: Optional[str] = None) -> "DIContainer":
@@ -147,12 +145,6 @@ class DIContainer:
             context_assembler=context_assembler,
         )
 
-        review_code_handler = ReviewCodeHandler(
-            security_analyzer=security_analyzer,
-            context_assembler=context_assembler,
-            vector_store=vector_store,
-        )
-
         return cls(
             config=config,
             llm_service=llm_service,
@@ -168,7 +160,6 @@ class DIContainer:
             checksum_service=checksum_service,
             index_handler=index_handler,
             review_file_handler=review_file_handler,
-            review_code_handler=review_code_handler,
         )
 
     def get_system_prompt(self, language: str) -> str:
