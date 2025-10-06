@@ -24,7 +24,7 @@ FalconEYE v2.0 is a complete reimplementation of the security code review tool, 
 
 - Python 3.12+
 - Ollama running locally
-- Required models: `ollama pull qwen2.5-coder:32b && ollama pull embeddinggemma:300m`
+- Required models: `ollama pull qwen3-coder:32b && ollama pull embeddinggemma:300m`
 
 ### Installation
 
