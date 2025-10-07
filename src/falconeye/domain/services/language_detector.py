@@ -26,6 +26,7 @@ class LanguageDetector:
         "dart": [".dart"],
         "javascript": [".js", ".jsx", ".mjs", ".cjs"],
         "typescript": [".ts", ".tsx"],
+        "ruby": [".rb", ".rake"],
     }
 
     # Extensions to language mapping (reverse)
