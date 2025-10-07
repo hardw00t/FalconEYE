@@ -10,6 +10,7 @@ from .c_cpp_plugin import CCppPlugin
 from .java_plugin import JavaPlugin
 from .dart_plugin import DartPlugin
 from .php_plugin import PHPPlugin
+from .ruby_plugin import RubyPlugin
 
 
 class PluginRegistry:
@@ -145,6 +146,9 @@ class PluginRegistry:
 
         # Register PHP plugin
         self.register(PHPPlugin())
+
+        # Register Ruby plugin
+        self.register(RubyPlugin())
 
     def __repr__(self) -> str:
         """String representation."""

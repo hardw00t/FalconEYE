@@ -161,7 +161,7 @@ logging:
 FalconEYE analyzes code in multiple languages with language-specific security knowledge:
 
 **Currently Supported:**
-Python • JavaScript • TypeScript • Go • Rust • C/C++ • Java • Dart • PHP
+Python • JavaScript • TypeScript • Go • Rust • C/C++ • Java • Dart • PHP • Ruby
 
 **Extensible Plugin System:**
 Add new languages by implementing language-specific plugins with tailored security prompts.
