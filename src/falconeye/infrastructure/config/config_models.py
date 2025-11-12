@@ -241,7 +241,7 @@ class OutputConfig(BaseModel):
     """Output configuration."""
     default_format: str = Field(
         default="json",
-        description="Default output format (console, json, sarif)"
+        description="Default output format (console, json, sarif, html)"
     )
     color: bool = Field(
         default=True,
@@ -252,8 +252,8 @@ class OutputConfig(BaseModel):
         description="Enable verbose output"
     )
     save_to_file: bool = Field(
-        default=False,
-        description="Save output to file"
+        default=True,
+        description="Save output to file (auto-saves JSON + HTML reports)"
     )
     output_directory: str = Field(
         default="./falconeye_reports",
@@ -264,7 +264,7 @@ class OutputConfig(BaseModel):
     @classmethod
     def validate_format(cls, v):
         """Ensure format is valid."""
-        valid_formats = ["console", "json", "sarif"]
+        valid_formats = ["console", "json", "sarif", "html"]
         if v not in valid_formats:
             raise ValueError(f"format must be one of {valid_formats}")
         return v

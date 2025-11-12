@@ -12,6 +12,7 @@ Traditional security scanners are limited by their pattern databases. They can o
 - **Context-Aware Analysis**: Retrieval-Augmented Generation provides relevant code context for deeper insights
 - **Novel Vulnerability Detection**: Identifies security issues that don't match known patterns
 - **Reduced False Positives**: AI validation reduces noise from pattern-based false alarms
+- **Rich HTML Reports**: Auto-generated interactive reports with executive dashboards and statistics
 - **Smart & Fast**: Incremental analysis means re-scans only process changed files
 - **Privacy-First**: Runs entirely locally with Ollama—your code never leaves your machine
 
@@ -74,10 +75,9 @@ ollama pull embeddinggemma:300m
 
 # Install FalconEYE
 pip install -e .
-
-# Initialize configuration
-falconeye config --init
 ```
+
+FalconEYE will use the default configuration on first run. You can customize settings by creating `~/.falconeye/config.yaml` (see [Configuration](#configuration) section).
 
 ### Your First Scan
 
@@ -116,11 +116,22 @@ Analyze all files in a directory with comprehensive coverage.
 # Human-readable console output
 falconeye review src/ --format console
 
-# Machine-readable JSON
+# Machine-readable JSON (auto-generates HTML report too)
 falconeye review src/ --format json --output findings.json
+
+# HTML report with interactive dashboard
+falconeye review src/ --format html --output report.html
 
 # SARIF for CI/CD integration
 falconeye review src/ --format sarif --output results.sarif
+```
+
+**Default Behavior**: When no output file is specified, FalconEYE automatically saves both JSON and HTML reports to `./falconeye_reports/` with timestamps:
+```bash
+falconeye scan /path/to/project
+# Generates:
+# - falconeye_project_20251112_171500.json
+# - falconeye_project_20251112_171500.html
 ```
 
 ### Project Management
@@ -138,23 +149,37 @@ falconeye projects delete <project-id>
 
 ## Configuration
 
-FalconEYE uses a hierarchical configuration system. Create `~/.falconeye/config.yaml`:
+FalconEYE uses a hierarchical configuration system. Configuration files are loaded in this order (later files override earlier ones):
+
+1. Default config: `<install-dir>/config.yaml`
+2. User config: `~/.falconeye/config.yaml`
+3. Project config: `./falconeye.yaml`
+
+Create `~/.falconeye/config.yaml` to customize settings:
 
 ```yaml
 llm:
+  provider: ollama
   model:
     analysis: qwen3-coder:30b      # AI model for security analysis
     embedding: embeddinggemma:300m  # Model for code embeddings
   base_url: http://localhost:11434
+  timeout: 600                      # Request timeout in seconds
 
 analysis:
   top_k_context: 5          # Number of similar code chunks to retrieve
   validate_findings: true    # Enable AI validation pass
+  batch_size: 10            # Files to process in parallel
 
 logging:
-  level: INFO
-  log_to_file: true
+  level: INFO               # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: ./falconeye.log     # Log file path
+  console: true             # Enable console logging
+  rotation: daily           # Log rotation strategy
+  retention_days: 30        # Days to retain logs
 ```
+
+See the [default config.yaml](config.yaml) for all available options.
 
 ## Supported Languages
 
@@ -168,7 +193,10 @@ Add new languages by implementing language-specific plugins with tailored securi
 
 ## Understanding the Output
 
+FalconEYE supports multiple output formats for different use cases:
+
 ### Console Format
+Interactive terminal output with color-coded severity levels:
 ```
 ╭─ SQL Injection Vulnerability ────────────────────────────────╮
 │ Severity: HIGH | CWE-89                                       │
@@ -184,21 +212,44 @@ Add new languages by implementing language-specific plugins with tailored securi
 ```
 
 ### JSON Format
+Machine-readable format for CI/CD integration and programmatic processing:
 ```json
 {
   "findings": [
     {
-      "title": "SQL Injection Vulnerability",
+      "id": "uuid",
+      "issue": "SQL Injection Vulnerability",
       "severity": "high",
-      "cwe": "CWE-89",
-      "file": "app/database.py",
-      "line": 42,
-      "description": "...",
-      "mitigation": "Use parameterized queries..."
+      "confidence": {"value": "high", "level": "high"},
+      "location": {
+        "file_path": "app/database.py",
+        "line_start": 42,
+        "line_end": 45
+      },
+      "code_snippet": "...",
+      "reasoning": "...",
+      "mitigation": "Use parameterized queries...",
+      "cwe_id": "CWE-89"
     }
   ]
 }
 ```
+
+### HTML Format
+**Rich, interactive reports with executive summary** (auto-generated with JSON):
+
+- **Executive Dashboard**: Total findings, severity breakdown, scan statistics
+- **Interactive Filtering**: Filter findings by severity level
+- **Detailed Findings**: 
+  - Color-coded severity badges
+  - File locations with line numbers
+  - Code snippets with ±4 lines of context
+  - Highlighted vulnerable lines
+  - Mitigation recommendations
+  - CWE IDs and tags
+- **Professional Design**: Modern, responsive, print-friendly layout
+
+HTML reports are automatically generated alongside JSON reports when using default settings.
 
 ### SARIF Format
 Industry-standard format compatible with GitHub Security, GitLab, and other DevSecOps platforms.
@@ -212,8 +263,9 @@ Industry-standard format compatible with GitHub Security, GitLab, and other DevS
 | `falconeye scan <path>` | Index and review in one step |
 | `falconeye projects list` | Show all indexed projects |
 | `falconeye projects info <id>` | Display project details |
-| `falconeye info` | System information |
-| `falconeye config --init` | Create default configuration |
+| `falconeye projects delete <id>` | Delete a project and its data |
+| `falconeye projects cleanup` | Remove orphaned project data |
+| `falconeye info` | System and configuration information |
 
 Run `falconeye --help` for complete documentation.
 
@@ -300,7 +352,7 @@ A: Use SARIF output format which integrates with GitHub Security, GitLab, and mo
 
 MIT License
 
-Copyright (c) 2025 hardw00t
+Copyright (c) 2025 hardw00t h4ckologic
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -257,6 +257,30 @@ class ChromaVectorStoreAdapter(VectorStoreRepository):
 
             except Exception as e:
                 duration = time.time() - start_time
+                
+                # Check for embedding dimension mismatch
+                error_msg = str(e)
+                if "dimension" in error_msg.lower() and "expecting" in error_msg.lower():
+                    self.logger.error(
+                        "Embedding dimension mismatch detected",
+                        exc_info=True,
+                        extra={
+                            "duration_seconds": round(duration, 3),
+                            "error_type": type(e).__name__,
+                            "collection": collection,
+                            "error": error_msg,
+                            "solution": "Delete the project and re-index with: falconeye projects delete <project_id> && falconeye index <path>"
+                        }
+                    )
+                    raise ValueError(
+                        f"Embedding dimension mismatch: {error_msg}\n\n"
+                        f"This happens when the embedding model changed after indexing.\n"
+                        f"Solution: Delete and re-index the project:\n"
+                        f"  1. List projects: falconeye projects list\n"
+                        f"  2. Delete project: falconeye projects delete <project_id>\n"
+                        f"  3. Re-index: falconeye index <path>"
+                    ) from e
+                
                 self.logger.error(
                     "Vector search failed",
                     exc_info=True,
@@ -493,33 +517,58 @@ class ChromaVectorStoreAdapter(VectorStoreRepository):
         Returns:
             List of similar document chunks
         """
-        coll = self._get_collection(collection)
+        try:
+            coll = self._get_collection(collection)
 
-        # Use embedding search if provided
-        if query_embedding:
-            results = coll.query(
-                query_embeddings=[query_embedding],
-                n_results=top_k,
-            )
-        else:
-            results = coll.query(
-                query_texts=[query],
-                n_results=top_k,
-            )
-
-        # Convert results to DocumentChunk objects
-        chunks = []
-        if results["ids"] and results["ids"][0]:
-            for i, chunk_id in enumerate(results["ids"][0]):
-                chunk = self._dict_to_document_chunk(
-                    chunk_id=chunk_id,
-                    content=results["documents"][0][i],
-                    metadata_dict=results["metadatas"][0][i],
-                    embedding=results["embeddings"][0][i] if results.get("embeddings") else None,
+            # Use embedding search if provided
+            if query_embedding:
+                results = coll.query(
+                    query_embeddings=[query_embedding],
+                    n_results=top_k,
                 )
-                chunks.append(chunk)
+            else:
+                results = coll.query(
+                    query_texts=[query],
+                    n_results=top_k,
+                )
 
-        return chunks
+            # Convert results to DocumentChunk objects
+            chunks = []
+            if results["ids"] and results["ids"][0]:
+                for i, chunk_id in enumerate(results["ids"][0]):
+                    chunk = self._dict_to_document_chunk(
+                        chunk_id=chunk_id,
+                        content=results["documents"][0][i],
+                        metadata_dict=results["metadatas"][0][i],
+                        embedding=results["embeddings"][0][i] if results.get("embeddings") else None,
+                    )
+                    chunks.append(chunk)
+
+            return chunks
+            
+        except Exception as e:
+            # Check for embedding dimension mismatch
+            error_msg = str(e)
+            if "dimension" in error_msg.lower() and "expecting" in error_msg.lower():
+                self.logger.error(
+                    "Embedding dimension mismatch in document search",
+                    exc_info=True,
+                    extra={
+                        "error_type": type(e).__name__,
+                        "collection": collection,
+                        "error": error_msg,
+                        "solution": "Delete the project and re-index"
+                    }
+                )
+                raise ValueError(
+                    f"Embedding dimension mismatch: {error_msg}\n\n"
+                    f"This happens when the embedding model changed after indexing.\n"
+                    f"Solution: Delete and re-index the project:\n"
+                    f"  1. List projects: falconeye projects list\n"
+                    f"  2. Delete project: falconeye projects delete <project_id>\n"
+                    f"  3. Re-index: falconeye index <path>"
+                ) from e
+            raise
 
     def _doc_metadata_to_dict(self, chunk: DocumentChunk) -> Dict[str, Any]:
         """

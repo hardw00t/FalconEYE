@@ -267,6 +267,25 @@ def review_command(
     if output_file:
         output_file.write_text(output)
         console.print(f"\n[green]Results saved to {output_file}[/green]")
+    elif output_format == "json" and container.config.output.save_to_file:
+        # Auto-save JSON to default location
+        from datetime import datetime
+        output_dir = Path(container.config.output.output_directory)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        project_name = path.name if path.is_dir() else path.stem
+        auto_file = output_dir / f"falconeye_{project_name}_{timestamp}.json"
+        
+        auto_file.write_text(output)
+        console.print(f"\n[green]Results saved to {auto_file}[/green]")
+        
+        # Also generate HTML report
+        html_formatter = FormatterFactory.create("html")
+        html_output = html_formatter.format_review(review)
+        html_file = output_dir / f"falconeye_{project_name}_{timestamp}.html"
+        html_file.write_text(html_output)
+        console.print(f"[green]HTML report saved to {html_file}[/green]")
     else:
         console.print("")
         console.print(output)
