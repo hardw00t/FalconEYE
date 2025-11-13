@@ -117,11 +117,11 @@ $ falconeye scan ./myapp
                      v2.0 - AI-Powered Analysis
                      by hardw00t & h4ckologic
 
-Indexing codebase...
-Indexed 127 files in 8.3s
+🔍 Indexing codebase...
+✓ Indexed 127 files in 8.3s
 
-Analyzing for vulnerabilities...
-Found 12 potential issues
+🤖 Analyzing for vulnerabilities...
+✓ Found 12 potential issues
 
 📊 Results saved to: falconeye_reports/falconeye_myapp_20251113_130425.html
 ```
@@ -132,7 +132,8 @@ Found 12 potential issues
 
 | Feature | Description |
 |---------|-------------|
-| 📊 **Executive Reports** | Total findings, severity breakdown, scan statistics |
+| 🎨 **Modern Design** | Dark blue/cyan theme with glowing effects |
+| 📊 **Executive Dashboard** | Total findings, severity breakdown, scan statistics |
 | 🎯 **Interactive Filtering** | Filter by severity with color-matched buttons |
 | 💻 **Code Context** | ±4 lines around vulnerabilities with syntax highlighting |
 | 📱 **Responsive** | Works on desktop, tablet, and mobile |
@@ -140,6 +141,7 @@ Found 12 potential issues
 
 </div>
 
+> **Note**: Add screenshots here by placing images in `docs/images/` directory
 
 ---
 
@@ -150,6 +152,18 @@ Found 12 potential issues
 - **RAG-Enhanced Context**: Retrieves similar code patterns from your entire codebase
 - **Confidence Scoring**: AI rates its confidence in each finding
 - **CWE Mapping**: Maps vulnerabilities to Common Weakness Enumeration
+
+### 🎨 Beautiful Reports
+- **Interactive HTML Dashboard**: Modern, responsive design with statistics
+- **Color-Coded Severity**: Instant visual identification (Red=Critical, Orange=High, Yellow=Medium, Blue=Low)
+- **Real-Time Filtering**: Filter findings by severity with smooth animations
+- **Code Snippets**: Full context with syntax highlighting and line numbers
+
+### 🖥️ Enhanced CLI Experience
+- **ASCII Art Banner**: Stylish cyan-themed banner on every command
+- **Rich Console Output**: Color-coded terminal output with progress indicators
+- **Smart Error Messages**: Clear, actionable error messages with solutions
+- **Graceful Degradation**: Continues analysis even when individual files fail
 
 ### 🔧 Robust Processing
 - **Advanced JSON Parsing**: Multi-layer escape sequence fixing for AI responses
@@ -395,6 +409,12 @@ Industry-standard format compatible with:
 - ✅ **No Data Collection**: Your code never leaves your environment
 - ✅ **No Telemetry**: No usage tracking or analytics
 
+### Security Best Practices
+- 🔐 Secure configuration management
+- 🔐 Input validation and sanitization
+- 🔐 Safe file handling
+- 🔐 Dependency security scanning
+
 ---
 
 ## 🤝 Contributing
@@ -407,7 +427,7 @@ We welcome contributions from the community! Here's how you can help:
 - 🎨 **HTML Templates**: Create custom report templates
 - 🔌 **Integrations**: Build integrations with security platforms
 - ⚡ **Performance**: Optimize analysis speed and memory usage
-
+- 📚 **Documentation**: Improve guides and examples
 
 ### Getting Started
 ```bash
@@ -439,6 +459,14 @@ mypy src/
 9. Open a Pull Request
 
 ---
+
+## 📖 Additional Resources
+
+### Documentation
+- [Architecture Guide](docs/ARCHITECTURE_SUMMARY.md)
+- [Smart Re-indexing Guide](docs/SMART_REINDEXING_GUIDE.md)
+- [Implementation Status](docs/IMPLEMENTATION_STATUS.md)
+- [Migration Guide](docs/MIGRATION_GUIDE.md)
 
 ### Community
 - 💬 [Discussions](https://github.com/hardw00t/FalconEYE/discussions) - Ask questions and share ideas
@@ -481,6 +509,18 @@ Use SARIF output format which integrates with GitHub Security, GitLab, and most 
 falconeye scan ./src --format sarif --output results.sarif
 ```
 </details>
+
+<details>
+<summary><b>What do the HTML report colors mean?</b></summary>
+
+- 🔴 **Red (Critical)**: Immediate action required
+- 🟠 **Orange (High)**: High priority vulnerabilities
+- 🟡 **Yellow (Medium)**: Should be addressed
+- 🔵 **Blue (Low)**: Minor issues or best practices
+- ⚪ **Gray (Info)**: Informational findings
+- 🔷 **Cyan (Accent)**: UI elements and branding
+</details>
+
 ---
 
 ## 📊 Project Stats
