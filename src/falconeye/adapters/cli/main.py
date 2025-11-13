@@ -6,6 +6,7 @@ from typing import Optional
 import typer
 from rich.console import Console
 
+from .banner import print_banner
 from .commands import (
     index_command,
     review_command,
@@ -399,6 +400,9 @@ app.add_typer(projects_app, name="projects")
 def main():
     """Main entry point."""
     try:
+        # Show banner if not in help mode
+        if len(sys.argv) > 1 and sys.argv[1] not in ['--help', '-h', '--version']:
+            print_banner(console)
         app()
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted by user[/yellow]")
