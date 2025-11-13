@@ -45,8 +45,9 @@ class HTMLFormatter(OutputFormatter):
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: #f5f5f5;
+            color: #1f2937;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            min-height: 100vh;
         }}
         
         .container {{
@@ -56,29 +57,70 @@ class HTMLFormatter(OutputFormatter):
         }}
         
         header {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0a1929 0%, #1a2332 50%, #0a1929 100%);
             color: white;
-            padding: 40px;
-            border-radius: 10px;
+            padding: 50px 40px;
+            border-radius: 12px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }}
+        
+        header::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+            pointer-events: none;
         }}
         
         header h1 {{
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
+            font-size: 2.8em;
+            margin-bottom: 5px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #00ffff;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            position: relative;
+            z-index: 1;
         }}
         
-        .logo {{
-            font-size: 1.2em;
+        header .subtitle {{
+            font-size: 1.1em;
+            color: #7dd3fc;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
         }}
         
         header .meta {{
-            opacity: 0.9;
+            opacity: 0.95;
             font-size: 0.95em;
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }}
+        
+        header .meta > div {{
+            padding: 8px 0;
+            color: #e0f2fe;
+        }}
+        
+        header .meta strong {{
+            color: #00ffff;
+            font-weight: 600;
         }}
         
         .stats-grid {{
@@ -91,9 +133,15 @@ class HTMLFormatter(OutputFormatter):
         .stat-card {{
             background: white;
             padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-left: 4px solid #667eea;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            border-left: 4px solid #00d4ff;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }}
+        
+        .stat-card:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.12);
         }}
         
         .stat-card.critical {{
@@ -128,15 +176,17 @@ class HTMLFormatter(OutputFormatter):
         
         .filters {{
             background: white;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 25px;
+            border-radius: 12px;
             margin-bottom: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
         }}
         
         .filters h3 {{
-            margin-bottom: 15px;
-            color: #333;
+            margin-bottom: 18px;
+            color: #1f2937;
+            font-size: 1.2em;
+            font-weight: 600;
         }}
         
         .filter-buttons {{
@@ -146,25 +196,125 @@ class HTMLFormatter(OutputFormatter):
         }}
         
         .filter-btn {{
-            padding: 8px 16px;
+            padding: 10px 20px;
             border: 2px solid #e5e7eb;
             background: white;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
             font-size: 0.9em;
-            font-weight: 500;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }}
         
         .filter-btn:hover {{
-            border-color: #667eea;
-            color: #667eea;
+            border-color: #00d4ff;
+            color: #00d4ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 212, 255, 0.2);
         }}
         
         .filter-btn.active {{
-            background: #667eea;
+            background: linear-gradient(135deg, #00d4ff 0%, #0891b2 100%);
             color: white;
-            border-color: #667eea;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+        }}
+        
+        .filter-btn[data-filter="critical"] {{
+            border-color: #dc2626;
+            color: #dc2626;
+        }}
+        
+        .filter-btn[data-filter="critical"]:hover {{
+            background: #dc2626;
+            color: white;
+            border-color: #dc2626;
+            box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+        }}
+        
+        .filter-btn[data-filter="critical"].active {{
+            background: #dc2626;
+            color: white;
+            border-color: #dc2626;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+        }}
+        
+        .filter-btn[data-filter="high"] {{
+            border-color: #ea580c;
+            color: #ea580c;
+        }}
+        
+        .filter-btn[data-filter="high"]:hover {{
+            background: #ea580c;
+            color: white;
+            border-color: #ea580c;
+            box-shadow: 0 4px 8px rgba(234, 88, 12, 0.3);
+        }}
+        
+        .filter-btn[data-filter="high"].active {{
+            background: #ea580c;
+            color: white;
+            border-color: #ea580c;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
+        }}
+        
+        .filter-btn[data-filter="medium"] {{
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }}
+        
+        .filter-btn[data-filter="medium"]:hover {{
+            background: #f59e0b;
+            color: white;
+            border-color: #f59e0b;
+            box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+        }}
+        
+        .filter-btn[data-filter="medium"].active {{
+            background: #f59e0b;
+            color: white;
+            border-color: #f59e0b;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }}
+        
+        .filter-btn[data-filter="low"] {{
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }}
+        
+        .filter-btn[data-filter="low"]:hover {{
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }}
+        
+        .filter-btn[data-filter="low"].active {{
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }}
+        
+        .filter-btn[data-filter="info"] {{
+            border-color: #6b7280;
+            color: #6b7280;
+        }}
+        
+        .filter-btn[data-filter="info"]:hover {{
+            background: #6b7280;
+            color: white;
+            border-color: #6b7280;
+            box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+        }}
+        
+        .filter-btn[data-filter="info"].active {{
+            background: #6b7280;
+            color: white;
+            border-color: #6b7280;
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
         }}
         
         .findings {{
@@ -175,10 +325,16 @@ class HTMLFormatter(OutputFormatter):
         
         .finding {{
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-left: 5px solid #667eea;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            border-left: 5px solid #00d4ff;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }}
+        
+        .finding:hover {{
+            transform: translateX(2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.12);
         }}
         
         .finding.critical {{
@@ -325,10 +481,20 @@ class HTMLFormatter(OutputFormatter):
         
         footer {{
             text-align: center;
-            padding: 30px;
+            padding: 40px 30px;
             color: #6b7280;
             font-size: 0.9em;
-            margin-top: 40px;
+            margin-top: 50px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }}
+        
+        footer p {{
+            margin: 5px 0;
+        }}
+        
+        footer strong {{
+            color: #00d4ff;
+            font-weight: 600;
         }}
         
         .no-findings {{
@@ -368,12 +534,13 @@ class HTMLFormatter(OutputFormatter):
 <body>
     <div class="container">
         <header>
-            <h1><span class="logo">🦅</span> FalconEYE Security Report</h1>
+            <h1>FALCONEYE</h1>
+            <div class="subtitle">Security Code Review</div>
             <div class="meta">
                 <div><strong>Project:</strong> {review.codebase_path}</div>
                 <div><strong>Language:</strong> {review.language}</div>
                 <div><strong>Scan Date:</strong> {review.started_at.strftime('%Y-%m-%d %H:%M:%S')}</div>
-                <div><strong>Files Analyzed:</strong> {review.files_analyzed}</div>
+                <div><strong>Files Analyzed:</strong> {self._get_files_analyzed_count(review)}</div>
                 <div><strong>Duration:</strong> {self._format_duration(review)}</div>
             </div>
         </header>
@@ -470,6 +637,23 @@ class HTMLFormatter(OutputFormatter):
             'low': review.get_low_count(),
         }
 
+    def _get_files_analyzed_count(self, review: SecurityReview) -> int:
+        """
+        Get the number of files analyzed.
+        
+        If files_analyzed is 0, calculate from unique file paths in findings.
+        """
+        if review.files_analyzed > 0:
+            return review.files_analyzed
+        
+        # Calculate from unique file paths in findings
+        unique_files = set()
+        for finding in review.findings:
+            if finding.file_path:
+                unique_files.add(finding.file_path)
+        
+        return len(unique_files) if unique_files else 1  # At least 1 if we have findings
+
     def _format_duration(self, review: SecurityReview) -> str:
         """Format duration in human-readable format."""
         if not review.completed_at:
@@ -547,7 +731,7 @@ class HTMLFormatter(OutputFormatter):
                 </div>
             </div>
             
-            <div class="finding-location">📍 {self._escape_html(location)}</div>
+            <div class="finding-location">{self._escape_html(location)}</div>
             
             <div class="finding-section">
                 <h4>Description</h4>
@@ -590,7 +774,7 @@ class HTMLFormatter(OutputFormatter):
         """Render message when no findings."""
         return """
         <div class="no-findings">
-            <h2>✅ No Security Issues Found</h2>
+            <h2>No Security Issues Found</h2>
             <p>The security analysis did not identify any vulnerabilities in the scanned code.</p>
         </div>
         """
