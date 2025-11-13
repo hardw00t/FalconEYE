@@ -1,79 +1,54 @@
 # FalconEYE
 
-**Next-Generation Security Code Analysis Powered by AI**
+AI-powered security code review for modern engineering teams. FalconEYE v2.0 combines semantic code understanding, retrieval-augmented context, and resilient infrastructure to surface real vulnerabilities with fewer false positives — all running locally.
 
-FalconEYE represents a paradigm shift in static code analysis. Instead of relying on predefined vulnerability patterns, it leverages large language models to reason about your code the same way a security expert would—understanding context, intent, and subtle security implications that traditional tools miss.
+## Why FalconEYE
 
-## Why FalconEYE?
+- **Semantic reasoning over pattern matching**: Goes beyond signatures to understand intent, data flow, and business logic.
+- **Context-aware via RAG**: Enriches analysis with semantically similar code from your entire codebase.
+- **Lower noise**: Optional AI validation step reduces false positives.
+- **Fast and incremental**: Smart re-indexing only processes changed files.
+- **Privacy-first**: Runs locally against your own Ollama deployment; your code never leaves your machine.
 
-Traditional security scanners are limited by their pattern databases. They can only find what they've been programmed to look for. FalconEYE is different:
-
-- **No Pattern Matching**: Uses pure AI reasoning to understand your code semantically
-- **Context-Aware Analysis**: Retrieval-Augmented Generation provides relevant code context for deeper insights
-- **Novel Vulnerability Detection**: Identifies security issues that don't match known patterns
-- **Reduced False Positives**: AI validation reduces noise from pattern-based false alarms
-- **Rich HTML Reports**: Auto-generated interactive reports with executive dashboards and statistics
-- **Smart & Fast**: Incremental analysis means re-scans only process changed files
-- **Privacy-First**: Runs entirely locally with Ollama—your code never leaves your machine
-
-## How It Works
-
-FalconEYE follows a sophisticated analysis pipeline:
+## How it works
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     1. CODE INGESTION                            │
-│  Scans repository → Detects languages → Parses AST structure    │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────┐
-│                    2. INTELLIGENT INDEXING                       │
-│  Chunks code semantically → Generates embeddings → Stores in    │
-│  vector database for fast semantic search                       │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────┐
-│                   3. CONTEXT ASSEMBLY (RAG)                      │
-│  For each code segment → Retrieves similar code → Gathers       │
-│  relevant context from your entire codebase                     │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────┐
-│                    4. AI SECURITY ANALYSIS                       │
-│  LLM analyzes code with context → Reasons about vulnerabilities │
-│  → Understands data flow → Identifies security implications     │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────┐
-│                     5. VALIDATION & REPORTING                    │
-│  Optional AI validation pass → Formats findings → Outputs in    │
-│  Console/JSON/SARIF format with actionable remediation          │
+│ 1) CODE INGESTION       Scan repo → detect languages → parse AST │
+└───────────────┬─────────────────────────────────────────────────┘
+                │
+┌───────────────▼─────────────────────────────────────────────────┐
+│ 2) INTELLIGENT INDEX  Chunk semantically → embed → store (Chroma)│
+└───────────────┬─────────────────────────────────────────────────┘
+                │
+┌───────────────▼─────────────────────────────────────────────────┐
+│ 3) CONTEXT ASSEMBLY   Retrieve similar code (RAG) across project │
+└───────────────┬─────────────────────────────────────────────────┘
+                │
+┌───────────────▼─────────────────────────────────────────────────┐
+│ 4) AI ANALYSIS       LLM reasoning → data-flow → vuln detection  │
+└───────────────┬─────────────────────────────────────────────────┘
+                │
+┌───────────────▼─────────────────────────────────────────────────┐
+│ 5) VALIDATION/OUTPUT Optional validation → console/JSON/SARIF    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### What Makes This Special?
-
-**Semantic Understanding**: FalconEYE doesn't just scan for known patterns. It reads your code like a security engineer would, understanding business logic, data flows, and architectural patterns to identify real vulnerabilities.
-
-**Smart Re-indexing**: After the initial scan, FalconEYE tracks file changes and only re-analyzes what's changed. This makes subsequent scans dramatically faster while maintaining comprehensive coverage.
-
-**RAG-Enhanced Analysis**: By retrieving similar code patterns from your entire codebase, the AI gets crucial context about how functions are used, what data they handle, and potential security implications across your application.
-
-## Getting Started
+## Quickstart
 
 ### Prerequisites
 
-1. **Python 3.12+** installed
-2. **Ollama** running locally ([Install Ollama](https://ollama.ai))
+- Python >= 3.12
+- Ollama running locally (https://ollama.ai)
 
-### Installation
+### Install
 
 ```bash
-# Pull required AI models
+# Pull the recommended models
 ollama pull qwen3-coder:30b
 ollama pull embeddinggemma:300m
 
-# Install FalconEYE
+# Install FalconEYE from source (editable)
 pip install -e .
 ```
 
@@ -81,36 +56,50 @@ FalconEYE will use the default configuration on first run. You can customize set
 
 ### Your First Scan
 
+# Optionally include extras (ollama client, tests, linters)
+pip install -e .[ollama]
+pip install -e .[test]
+pip install -e .[lint]
+
+# Initialize configuration
+falconeye config --init
+```
+
+### First scan
+
 ```bash
-# Index your codebase (one-time operation)
+# 1) Index your repository (one-time per project, incremental afterwards)
 falconeye index /path/to/your/project
 
-# Analyze for vulnerabilities
+# 2) Review for vulnerabilities
 falconeye review /path/to/your/project
 
-# Or do both in one command
+# (Optional) Do both in one step
 falconeye scan /path/to/your/project
 ```
 
-## Usage Examples
+## Usage
 
-### Single File Analysis
+### Common examples
 
 ```bash
+# Review a single file
 falconeye review src/auth/login.py
+
+# Review a directory with console output
+falconeye review src/ --output console
+
+# Save machine-readable JSON
+falconeye review src/ --output json --output-file findings.json
+
+# Generate SARIF for CI platforms
+falconeye review src/ --output sarif --output-file results.sarif
+
+# Tighten reporting to high+ severity and enable validation
+falconeye review src/ --severity high --validate
 ```
 
-Get detailed security analysis of a specific file with context from your entire codebase.
-
-### Directory Analysis
-
-```bash
-falconeye review src/api/
-```
-
-Analyze all files in a directory with comprehensive coverage.
-
-### Multiple Output Formats
+### Indexing controls
 
 ```bash
 # Human-readable console output
@@ -135,17 +124,59 @@ falconeye scan /path/to/project
 ```
 
 ### Project Management
+# Exclude paths/patterns and force a full re-index
+falconeye index . \
+  --exclude "*/node_modules/*" \
+  --exclude "*.min.js" \
+  --force-reindex
+
+# Override language auto-detection and chunking
+falconeye index . --language python --chunk-size 80 --chunk-overlap 12
+```
+
+### Project management
 
 ```bash
-# View all indexed projects
+# List all indexed projects
 falconeye projects list
 
-# Get detailed project statistics
+# Show project details
 falconeye projects info <project-id>
 
-# Clean up old projects
-falconeye projects delete <project-id>
+# Delete an indexed project (non-recoverable)
+falconeye projects delete <project-id> -y
+
+# Clean up metadata for files removed from disk
+falconeye projects cleanup <project-id> -y
 ```
+
+### System info and configuration
+
+```bash
+# Display version, model connectivity, and config summary
+falconeye info
+
+# Create default config, show active config, or specify a path
+falconeye config --init
+falconeye config --show
+falconeye config --path ./falconeye.yaml --show
+```
+
+## CLI reference
+
+| Command | Purpose |
+| --- | --- |
+| `falconeye index <path>` | Index codebase (embeddings + metadata). Options: `-l/--language`, `--chunk-size`, `--chunk-overlap`, `-e/--exclude`, `--project-id`, `--force-reindex`, `-c/--config`, `-v/--verbose` |
+| `falconeye review <path>` | Review file/dir. Options: `-l/--language`, `--validate`, `--top-k`, `-o/--output [console|json|sarif]`, `--output-file`, `--severity`, `-c/--config`, `-v/--verbose` |
+| `falconeye scan <path>` | Index + review. Options: `-l/--language`, `--validate`, `-o/--output`, `--output-file`, `--project-id`, `--force-reindex`, `-c/--config`, `-v/--verbose` |
+| `falconeye info` | Show system information. |
+| `falconeye config` | Manage configuration. Options: `--init`, `--path`, `--show` |
+| `falconeye projects list` | List indexed projects. |
+| `falconeye projects info <id>` | Show project details. |
+| `falconeye projects delete <id>` | Delete a project. Options: `-y/--yes`, `-c/--config` |
+| `falconeye projects cleanup <id>` | Remove metadata for deleted files. Options: `-y/--yes`, `-c/--config` |
+
+Run `falconeye --help` for complete documentation.
 
 ## Configuration
 
@@ -156,13 +187,19 @@ FalconEYE uses a hierarchical configuration system. Configuration files are load
 3. Project config: `./falconeye.yaml`
 
 Create `~/.falconeye/config.yaml` to customize settings:
+FalconEYE looks for configuration in:
+
+1. Project file `./falconeye.yaml` (optional)
+2. User file `~/.falconeye/config.yaml`
+
+Example (aligns with defaults in `config.yaml`):
 
 ```yaml
 llm:
   provider: ollama
   model:
-    analysis: qwen3-coder:30b      # AI model for security analysis
-    embedding: embeddinggemma:300m  # Model for code embeddings
+    analysis: qwen3-coder:30b
+    embedding: embeddinggemma:300m
   base_url: http://localhost:11434
   timeout: 600                      # Request timeout in seconds
 
@@ -182,16 +219,113 @@ logging:
 See the [default config.yaml](config.yaml) for all available options.
 
 ## Supported Languages
+  timeout: 120
+  retry:
+    max_retries: 3
+    initial_delay: 1.0
+    max_delay: 30.0
+    exponential_base: 2.0
+    jitter: 0.1
+  circuit_breaker:
+    failure_threshold: 5
+    success_threshold: 2
+    timeout: 60.0
 
-FalconEYE analyzes code in multiple languages with language-specific security knowledge:
+vector_store:
+  provider: chroma
+  persist_directory: ./falconeye_data/vectorstore
+  collection_prefix: falconeye
 
-**Currently Supported:**
-Python • JavaScript • TypeScript • Go • Rust • C/C++ • Java • Dart • PHP
+metadata:
+  provider: chroma
+  persist_directory: ./falconeye_data/metadata
+  collection_name: metadata
 
-**Extensible Plugin System:**
-Add new languages by implementing language-specific plugins with tailored security prompts.
+chunking:
+  default_size: 50
+  default_overlap: 10
+  max_chunk_size: 200
 
-## Understanding the Output
+analysis:
+  top_k_context: 5
+  validate_findings: true
+  batch_size: 10
+
+languages:
+  enabled: [python, javascript, typescript, go, rust, c, cpp, java, dart, php]
+
+file_discovery:
+  default_exclusions:
+    - "*/node_modules/*"
+    - "*/venv/*"
+    - "*/virtualenv/*"
+    - "*/.git/*"
+    - "*/dist/*"
+    - "*/build/*"
+    - "*/__pycache__/*"
+    - "*/target/*"
+    - "*.min.js"
+    - "*.pyc"
+
+output:
+  default_format: json
+  color: true
+  verbose: false
+  save_to_file: false
+  output_directory: ./falconeye_reports
+
+logging:
+  level: INFO
+  file: ./falconeye.log
+  console: true
+  rotation: daily
+  retention_days: 30
+```
+
+## Architecture
+
+FalconEYE follows a hexagonal architecture with clear separation of concerns.
+
+```mermaid
+flowchart TD
+    CLI[CLI Interface] --> APP[Application Commands]
+    APP --> ANALYZER[Security Analyzer]
+    APP --> CONTEXT[Context Assembler]
+    APP --> DETECTOR[Language Detector]
+    APP --> INFRA[(Infrastructure)]
+    INFRA -->|LLM| OLLAMA[Ollama]
+    INFRA -->|Vector| CHROMA[ChromaDB]
+    INFRA -->|AST| TREESITTER[Tree-sitter]
+    INFRA -->|Resilience| RESILIENCE[Circuit breaker, retries]
+```
+
+Key properties:
+
+- **Domain**: core review and validation logic.
+- **Application**: use-case orchestration and workflows.
+- **Infrastructure**: LLM, storage, parsing, logging, resilience.
+- **Adapters**: CLI and output formatters.
+
+## Storage and data
+
+- Vectors and metadata are stored under `falconeye_data/` by default.
+- Reports are written to `falconeye_reports/` when `--output-file` is used or `output.save_to_file` is enabled.
+
+## Supported languages
+
+Current coverage (configurable):
+
+Python • JavaScript • TypeScript • Go • Rust • C • C++ • Java • Dart • PHP
+
+Extend support via language-specific plugins and prompts.
+
+## Performance and smart re-indexing
+
+FalconEYE tracks file changes after the initial index and only reprocesses modified files, dramatically reducing subsequent scan times while maintaining context integrity. See `docs/SMART_REINDEXING_GUIDE.md` for details.
+
+## Understanding the output
+
+### Console example
 
 FalconEYE supports multiple output formats for different use cases:
 
@@ -213,6 +347,8 @@ Interactive terminal output with color-coded severity levels:
 
 ### JSON Format
 Machine-readable format for CI/CD integration and programmatic processing:
+### JSON example
+
 ```json
 {
   "findings": [
@@ -266,87 +402,43 @@ Industry-standard format compatible with GitHub Security, GitLab, and other DevS
 | `falconeye projects delete <id>` | Delete a project and its data |
 | `falconeye projects cleanup` | Remove orphaned project data |
 | `falconeye info` | System and configuration information |
+### SARIF
 
-Run `falconeye --help` for complete documentation.
+Industry-standard output for CI/CD platforms including GitHub and GitLab.
 
-## Architecture Overview
+## Troubleshooting
 
-FalconEYE is built on **hexagonal architecture** principles, ensuring clean separation between business logic and infrastructure:
-
-```
-                    ┌──────────────────┐
-                    │   CLI Interface  │
-                    └────────┬─────────┘
-                             │
-                    ┌────────▼─────────┐
-                    │  Application     │
-                    │  Command         │
-                    │  Handlers        │
-                    └────────┬─────────┘
-                             │
-         ┌───────────────────┼───────────────────┐
-         │                   │                   │
-    ┌────▼────┐       ┌──────▼──────┐      ┌────▼────┐
-    │ Security│       │  Context    │      │Language │
-    │Analyzer │       │  Assembler  │      │Detector │
-    └────┬────┘       └──────┬──────┘      └────┬────┘
-         │                   │                   │
-         └───────────────────┼───────────────────┘
-                             │
-                    ┌────────▼─────────┐
-                    │  Infrastructure  │
-                    ├──────────────────┤
-                    │ • Ollama LLM     │
-                    │ • Vector Store   │
-                    │ • AST Parser     │
-                    │ • Logging        │
-                    │ • Resilience     │
-                    └──────────────────┘
-```
-
-**Key Components:**
-
-- **Domain Layer**: Pure business logic for security analysis
-- **Application Layer**: Orchestrates use cases and workflows
-- **Infrastructure Layer**: Handles external systems (LLM, storage, parsing)
-- **Adapters Layer**: User interfaces and output formatting
-
-**Production-Ready Features:**
-
-- Circuit breaker pattern prevents cascade failures
-- Exponential backoff retry logic handles transient errors
-- Structured JSON logging with correlation IDs
-- Thread-safe context management
+- **Ollama connection**: Ensure `ollama serve` is running on `http://localhost:11434` and required models are pulled.
+- **No results**: Verify you ran `falconeye index` before `review` (or use `scan`).
+- **Performance**: Use exclusions and language hints to narrow scope.
+- **Diagnostics**: Run `falconeye info` to verify environment and config.
 
 ## Development
 
 ```bash
-# Install with development dependencies
-pip install -e ".[dev]"
+# Developer install (includes test, lint, ollama extras)
+pip install -e .[dev]
 
-# Run test suite
+# Tests
 pytest
+pytest tests/integration/ -v  # requires Ollama
 
-# Run integration tests (requires Ollama)
-pytest tests/integration/ -v
+# Linting & formatting
+ruff check .
+black .
+mypy src/
 ```
 
-## Frequently Asked Questions
+## Documentation
 
-**Q: Does my code get sent to external services?**
-A: No. FalconEYE runs entirely locally using Ollama. Your code never leaves your machine.
+- `docs/ARCHITECTURE_SUMMARY.md`
+- `docs/SMART_REINDEXING_GUIDE.md`
+- `docs/IMPLEMENTATION_STATUS.md`
+- `docs/MIGRATION_GUIDE.md`
 
-**Q: How accurate is AI-based analysis compared to traditional scanners?**
-A: FalconEYE complements traditional tools. It excels at finding context-dependent vulnerabilities and novel patterns that signature-based tools miss, while the AI validation reduces false positives.
+## Security and privacy
 
-**Q: How long does analysis take?**
-A: Initial indexing depends on codebase size. Subsequent scans with smart re-indexing only process changed files, making them significantly faster.
-
-**Q: Can I use different AI models?**
-A: Yes. Configure any Ollama-compatible model in your config file.
-
-**Q: How do I integrate this into CI/CD?**
-A: Use SARIF output format which integrates with GitHub Security, GitLab, and most DevSecOps platforms.
+FalconEYE analyzes code locally using your Ollama instance. No code or metadata is transmitted to external services unless you explicitly configure otherwise.
 
 ## License
 
@@ -373,7 +465,3 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ---
-
-**Built for security engineers who demand more than pattern matching.**
-
-Version 2.0.0 | Python 3.12+ | Production Ready
