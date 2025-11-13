@@ -1,5 +1,18 @@
 # FalconEYE
 
+```
+███████╗ █████╗ ██╗      ██████╗ ██████╗ ███╗   ██╗███████╗██╗   ██╗███████╗
+██╔════╝██╔══██╗██║     ██╔════╝██╔═══██╗████╗  ██║██╔════╝╚██╗ ██╔╝██╔════╝
+█████╗  ███████║██║     ██║     ██║   ██║██╔██╗ ██║█████╗   ╚████╔╝ █████╗  
+██╔══╝  ██╔══██║██║     ██║     ██║   ██║██║╚██╗██║██╔══╝    ╚██╔╝  ██╔══╝  
+██║     ██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║███████╗   ██║   ███████╗
+╚═╝     ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚══════╝
+```
+
+**Next-Generation Security Code Analysis Powered by Local LLMs**
+
+*by hardw00t & h4ckologic*
+
 AI-powered security code review for modern engineering teams. FalconEYE v2.0 combines semantic code understanding, retrieval-augmented context, and resilient infrastructure to surface real vulnerabilities with fewer false positives — all running locally.
 
 ## Why FalconEYE
@@ -371,25 +384,6 @@ Machine-readable format for CI/CD integration and programmatic processing:
 }
 ```
 
-### HTML Format
-**Rich, interactive reports with executive summary** (auto-generated with JSON):
-
-- **Executive Dashboard**: Total findings, severity breakdown, scan statistics
-- **Interactive Filtering**: Filter findings by severity level
-- **Detailed Findings**: 
-  - Color-coded severity badges
-  - File locations with line numbers
-  - Code snippets with ±4 lines of context
-  - Highlighted vulnerable lines
-  - Mitigation recommendations
-  - CWE IDs and tags
-- **Professional Design**: Modern, responsive, print-friendly layout
-
-HTML reports are automatically generated alongside JSON reports when using default settings.
-
-### SARIF Format
-Industry-standard format compatible with GitHub Security, GitLab, and other DevSecOps platforms.
-
 ## CLI Command Reference
 
 | Command | Description |
@@ -440,6 +434,19 @@ mypy src/
 
 FalconEYE analyzes code locally using your Ollama instance. No code or metadata is transmitted to external services unless you explicitly configure otherwise.
 
+
+## Contributing
+
+We welcome contributions! Please feel free to submit issues and pull requests.
+
+### Areas for Contribution
+- Additional language support
+- New output formats (PDF, CSV)
+- Custom HTML report templates
+- Integration with security platforms
+- Performance optimizations
+- Documentation improvements
+
 ## License
 
 MIT License
@@ -465,3 +472,39 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ---
+<<<<<<< HEAD
+=======
+
+## Quick Reference
+
+### Common Commands
+```bash
+# Full scan (index + review)
+falconeye scan /path/to/project
+
+# Review only (requires prior indexing)
+falconeye review /path/to/project
+
+# Generate HTML report
+falconeye review /path/to/project --format html --output report.html
+
+# Filter by severity
+falconeye review /path/to/project --severity high
+
+# List indexed projects
+falconeye projects list
+
+# System information
+falconeye info
+```
+
+### Output Locations
+- **Reports**: `./falconeye_reports/`
+- **Logs**: `./falconeye.log`
+- **Config**: `~/.falconeye/config.yaml`
+- **Debug Files**: `/tmp/falconeye_failed_response_*.txt`
+
+**Built for security engineers who demand more than pattern matching.**
+
+Version 2.0.0 | Python 3.12+ | Production Ready | by hardw00t & h4ckologic
+>>>>>>> 172aae5 (feat: Add dark blue/cyan branding, ASCII banner, and color-matched severity filters)
