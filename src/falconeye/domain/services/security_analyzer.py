@@ -254,8 +254,28 @@ class SecurityAnalyzer:
             return findings
 
         except json.JSONDecodeError as e:
+            # Save problematic response to debug file
+            import tempfile
+            import time
+            
+            debug_file = tempfile.gettempdir() + f"/falconeye_failed_response_{int(time.time())}.txt"
+            try:
+                with open(debug_file, 'w') as f:
+                    f.write(f"File: {file_path}\n")
+                    f.write(f"Error: {str(e)}\n")
+                    f.write(f"Response length: {len(ai_response) if ai_response else 0}\n")
+                    f.write("="*80 + "\n")
+                    f.write(ai_response or "(empty response)")
+                self.logger.error(
+                    f"Failed to parse AI response. Debug file saved to: {debug_file}"
+                )
+            except Exception as write_error:
+                self.logger.error(f"Could not save debug file: {write_error}")
+            
             raise InvalidSecurityFindingError(
-                f"AI response is not valid JSON: {str(e)}"
+                f"AI response is not valid JSON: {str(e)}. "
+                f"Response length: {len(ai_response) if ai_response else 0}. "
+                f"Debug file: {debug_file if 'debug_file' in locals() else 'N/A'}"
             ) from e
         except Exception as e:
             raise InvalidSecurityFindingError(
@@ -267,9 +287,22 @@ class SecurityAnalyzer:
         Extract JSON from AI response.
 
         AI might wrap JSON in markdown code blocks or include explanatory text.
-        Includes fallback mechanisms for malformed JSON.
+        
+        Args:
+            text: Raw AI response text
+            
+        Returns:
+            Parsed JSON object
+            
+        Raises:
+            json.JSONDecodeError: If no valid JSON found
         """
         import re
+        
+        # Handle empty or None responses
+        if not text or not text.strip():
+            self.logger.warning("Received empty AI response")
+            return {"reviews": []}
         
         # Try to find JSON in markdown code block
         if "```json" in text:
