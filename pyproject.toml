@@ -7,6 +7,7 @@ keywords = ["security", "llm", "code-review", "ollama"]
 requires-python = ">=3.12.0"
 dependencies = [
     "chromadb>=1.0.13",
+    "ollama>=0.3.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "PyYAML>=6.0.2",

@@ -81,10 +81,10 @@ file_discovery:
 
 # Output Settings
 output:
-  default_format: json  # Default output format (console, json, sarif)
+  default_format: json  # Default output format (console, json, sarif, html)
   color: true  # Enable colored console output
   verbose: false  # Enable verbose output
-  save_to_file: false  # Save output to file
+  save_to_file: true  # Save output to file (auto-saves JSON + HTML reports)
   output_directory: ./falconeye_reports  # Directory for reports
 
 # Logging

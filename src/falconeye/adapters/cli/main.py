@@ -404,7 +404,8 @@ def main():
         console.print("\n[yellow]Interrupted by user[/yellow]")
         sys.exit(130)
     except Exception as e:
-        console.print(f"\n[bold red]Error:[/bold red] {str(e)}")
+        console.print("\n[bold red]Error:[/bold red]", end=" ")
+        console.print(str(e), markup=False)
         sys.exit(1)
 
 

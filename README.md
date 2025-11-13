@@ -50,6 +50,11 @@ ollama pull embeddinggemma:300m
 
 # Install FalconEYE from source (editable)
 pip install -e .
+```
+
+FalconEYE will use the default configuration on first run. You can customize settings by creating `~/.falconeye/config.yaml` (see [Configuration](#configuration) section).
+
+### Your First Scan
 
 # Optionally include extras (ollama client, tests, linters)
 pip install -e .[ollama]
@@ -97,6 +102,28 @@ falconeye review src/ --severity high --validate
 ### Indexing controls
 
 ```bash
+# Human-readable console output
+falconeye review src/ --format console
+
+# Machine-readable JSON (auto-generates HTML report too)
+falconeye review src/ --format json --output findings.json
+
+# HTML report with interactive dashboard
+falconeye review src/ --format html --output report.html
+
+# SARIF for CI/CD integration
+falconeye review src/ --format sarif --output results.sarif
+```
+
+**Default Behavior**: When no output file is specified, FalconEYE automatically saves both JSON and HTML reports to `./falconeye_reports/` with timestamps:
+```bash
+falconeye scan /path/to/project
+# Generates:
+# - falconeye_project_20251112_171500.json
+# - falconeye_project_20251112_171500.html
+```
+
+### Project Management
 # Exclude paths/patterns and force a full re-index
 falconeye index . \
   --exclude "*/node_modules/*" \
@@ -153,6 +180,13 @@ Run `falconeye --help` for complete documentation.
 
 ## Configuration
 
+FalconEYE uses a hierarchical configuration system. Configuration files are loaded in this order (later files override earlier ones):
+
+1. Default config: `<install-dir>/config.yaml`
+2. User config: `~/.falconeye/config.yaml`
+3. Project config: `./falconeye.yaml`
+
+Create `~/.falconeye/config.yaml` to customize settings:
 FalconEYE looks for configuration in:
 
 1. Project file `./falconeye.yaml` (optional)
@@ -167,6 +201,24 @@ llm:
     analysis: qwen3-coder:30b
     embedding: embeddinggemma:300m
   base_url: http://localhost:11434
+  timeout: 600                      # Request timeout in seconds
+
+analysis:
+  top_k_context: 5          # Number of similar code chunks to retrieve
+  validate_findings: true    # Enable AI validation pass
+  batch_size: 10            # Files to process in parallel
+
+logging:
+  level: INFO               # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: ./falconeye.log     # Log file path
+  console: true             # Enable console logging
+  rotation: daily           # Log rotation strategy
+  retention_days: 30        # Days to retain logs
+```
+
+See the [default config.yaml](config.yaml) for all available options.
+
+## Supported Languages
   timeout: 120
   retry:
     max_retries: 3
@@ -275,6 +327,10 @@ FalconEYE tracks file changes after the initial index and only reprocesses modif
 
 ### Console example
 
+FalconEYE supports multiple output formats for different use cases:
+
+### Console Format
+Interactive terminal output with color-coded severity levels:
 ```
 ╭─ SQL Injection Vulnerability ────────────────────────────────╮
 │ Severity: HIGH | CWE-89                                       │
@@ -289,24 +345,63 @@ FalconEYE tracks file changes after the initial index and only reprocesses modif
 ╰───────────────────────────────────────────────────────────────╯
 ```
 
+### JSON Format
+Machine-readable format for CI/CD integration and programmatic processing:
 ### JSON example
 
 ```json
 {
   "findings": [
     {
-      "title": "SQL Injection Vulnerability",
+      "id": "uuid",
+      "issue": "SQL Injection Vulnerability",
       "severity": "high",
-      "cwe": "CWE-89",
-      "file": "app/database.py",
-      "line": 42,
-      "description": "...",
-      "mitigation": "Use parameterized queries..."
+      "confidence": {"value": "high", "level": "high"},
+      "location": {
+        "file_path": "app/database.py",
+        "line_start": 42,
+        "line_end": 45
+      },
+      "code_snippet": "...",
+      "reasoning": "...",
+      "mitigation": "Use parameterized queries...",
+      "cwe_id": "CWE-89"
     }
   ]
 }
 ```
 
+### HTML Format
+**Rich, interactive reports with executive summary** (auto-generated with JSON):
+
+- **Executive Dashboard**: Total findings, severity breakdown, scan statistics
+- **Interactive Filtering**: Filter findings by severity level
+- **Detailed Findings**: 
+  - Color-coded severity badges
+  - File locations with line numbers
+  - Code snippets with ±4 lines of context
+  - Highlighted vulnerable lines
+  - Mitigation recommendations
+  - CWE IDs and tags
+- **Professional Design**: Modern, responsive, print-friendly layout
+
+HTML reports are automatically generated alongside JSON reports when using default settings.
+
+### SARIF Format
+Industry-standard format compatible with GitHub Security, GitLab, and other DevSecOps platforms.
+
+## CLI Command Reference
+
+| Command | Description |
+|---------|-------------|
+| `falconeye index <path>` | Index codebase for analysis |
+| `falconeye review <path>` | Analyze code for vulnerabilities |
+| `falconeye scan <path>` | Index and review in one step |
+| `falconeye projects list` | Show all indexed projects |
+| `falconeye projects info <id>` | Display project details |
+| `falconeye projects delete <id>` | Delete a project and its data |
+| `falconeye projects cleanup` | Remove orphaned project data |
+| `falconeye info` | System and configuration information |
 ### SARIF
 
 Industry-standard output for CI/CD platforms including GitHub and GitLab.
@@ -349,7 +444,7 @@ FalconEYE analyzes code locally using your Ollama instance. No code or metadata 
 
 MIT License
 
-Copyright (c) 2025 hardw00t
+Copyright (c) 2025 hardw00t h4ckologic
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
