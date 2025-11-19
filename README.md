@@ -117,67 +117,42 @@ $ falconeye scan ./myapp
                      v2.0 - AI-Powered Analysis
                      by hardw00t & h4ckologic
 
-🔍 Indexing codebase...
-✓ Indexed 127 files in 8.3s
+Indexing codebase...
+Indexed 127 files in 8.3s
 
-🤖 Analyzing for vulnerabilities...
-✓ Found 12 potential issues
+Analyzing for vulnerabilities...
+Found 12 potential issues
 
-📊 Results saved to: falconeye_reports/falconeye_myapp_20251113_130425.html
+Results saved to: falconeye_reports/falconeye_myapp_20251113_130425.html
 ```
-
-### HTML Report Features
-
-<div align="center">
-
-| Feature | Description |
-|---------|-------------|
-| 🎨 **Modern Design** | Dark blue/cyan theme with glowing effects |
-| 📊 **Executive Dashboard** | Total findings, severity breakdown, scan statistics |
-| 🎯 **Interactive Filtering** | Filter by severity with color-matched buttons |
-| 💻 **Code Context** | ±4 lines around vulnerabilities with syntax highlighting |
-| 📱 **Responsive** | Works on desktop, tablet, and mobile |
-| 🖨️ **Print-Friendly** | Optimized for PDF export |
-
-</div>
-
-> **Note**: Add screenshots here by placing images in `docs/images/` directory
-
----
 
 ## ✨ Key Features
 
-### 🧠 AI-Powered Analysis
+### AI-Powered Analysis
 - **Semantic Code Understanding**: Goes beyond pattern matching to understand intent and data flow
 - **RAG-Enhanced Context**: Retrieves similar code patterns from your entire codebase
 - **Confidence Scoring**: AI rates its confidence in each finding
 - **CWE Mapping**: Maps vulnerabilities to Common Weakness Enumeration
 
-### 🎨 Beautiful Reports
-- **Interactive HTML Dashboard**: Modern, responsive design with statistics
-- **Color-Coded Severity**: Instant visual identification (Red=Critical, Orange=High, Yellow=Medium, Blue=Low)
-- **Real-Time Filtering**: Filter findings by severity with smooth animations
-- **Code Snippets**: Full context with syntax highlighting and line numbers
-
-### 🖥️ Enhanced CLI Experience
+### Enhanced CLI Experience
 - **ASCII Art Banner**: Stylish cyan-themed banner on every command
 - **Rich Console Output**: Color-coded terminal output with progress indicators
 - **Smart Error Messages**: Clear, actionable error messages with solutions
 - **Graceful Degradation**: Continues analysis even when individual files fail
 
-### 🔧 Robust Processing
+### Robust Processing
 - **Advanced JSON Parsing**: Multi-layer escape sequence fixing for AI responses
 - **Automatic Line Numbers**: Populates line numbers from source files
 - **Context Expansion**: Automatically expands code snippets with surrounding context
 - **Debug File Generation**: Saves problematic responses for troubleshooting
 
-### 📊 Multiple Output Formats
+### Multiple Output Formats
 - **Console**: Rich, color-coded terminal output
 - **JSON**: Machine-readable format for CI/CD integration
 - **HTML**: Interactive reports with executive summaries
 - **SARIF**: Industry-standard format for security platforms
 
-### ⚡ Performance
+### Performance
 - **Incremental Scanning**: Only re-analyzes changed files after initial scan
 - **Parallel Processing**: Batch processing for faster analysis
 - **Smart Caching**: Reuses embeddings and context when possible
@@ -429,24 +404,6 @@ We welcome contributions from the community! Here's how you can help:
 - ⚡ **Performance**: Optimize analysis speed and memory usage
 - 📚 **Documentation**: Improve guides and examples
 
-### Getting Started
-```bash
-# Fork the repository
-git clone https://github.com/YOUR_USERNAME/FalconEYE.git
-cd FalconEYE
-
-# Install development dependencies
-pip install -e .[dev]
-
-# Run tests
-pytest
-
-# Run linters
-ruff check .
-black .
-mypy src/
-```
-
 ### Pull Request Process
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -509,18 +466,6 @@ Use SARIF output format which integrates with GitHub Security, GitLab, and most 
 falconeye scan ./src --format sarif --output results.sarif
 ```
 </details>
-
-<details>
-<summary><b>What do the HTML report colors mean?</b></summary>
-
-- 🔴 **Red (Critical)**: Immediate action required
-- 🟠 **Orange (High)**: High priority vulnerabilities
-- 🟡 **Yellow (Medium)**: Should be addressed
-- 🔵 **Blue (Low)**: Minor issues or best practices
-- ⚪ **Gray (Info)**: Informational findings
-- 🔷 **Cyan (Accent)**: UI elements and branding
-</details>
-
 ---
 
 ## 📊 Project Stats
@@ -559,7 +504,5 @@ Copyright (c) 2025 hardw00t & h4ckologic
 Version 2.0.0 | Python 3.12+ | Production Ready
 
 Made with ❤️ by [hardw00t](https://github.com/hardw00t) & [h4ckologic](https://github.com/h4ckologic)
-
-[⬆ Back to Top](#)
 
 </div>
