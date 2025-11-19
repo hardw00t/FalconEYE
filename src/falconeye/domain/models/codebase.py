@@ -94,3 +94,27 @@ class Codebase:
     def total_size_bytes(self) -> int:
         """Get total size in bytes."""
         return sum(f.size_bytes for f in self.files)
+
+    @property
+    def all_languages(self) -> List[str]:
+        """
+        Get all unique languages present in the codebase files.
+        
+        Returns:
+            List of unique language names sorted by file count (descending)
+        """
+        if not self.files:
+            return [self.language]
+        
+        # Count files per language
+        from collections import Counter
+        language_counts = Counter(f.language for f in self.files)
+        
+        # Sort by count (descending)
+        sorted_languages = sorted(
+            language_counts.keys(),
+            key=lambda lang: language_counts[lang],
+            reverse=True
+        )
+        
+        return sorted_languages

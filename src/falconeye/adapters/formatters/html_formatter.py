@@ -538,7 +538,7 @@ class HTMLFormatter(OutputFormatter):
             <div class="subtitle">Security Code Review</div>
             <div class="meta">
                 <div><strong>Project:</strong> {review.codebase_path}</div>
-                <div><strong>Language:</strong> {review.language}</div>
+                <div><strong>Languages:</strong> {self._format_languages(review)}</div>
                 <div><strong>Scan Date:</strong> {review.started_at.strftime('%Y-%m-%d %H:%M:%S')}</div>
                 <div><strong>Files Analyzed:</strong> {self._get_files_analyzed_count(review)}</div>
                 <div><strong>Duration:</strong> {self._format_duration(review)}</div>
@@ -671,6 +671,27 @@ class HTMLFormatter(OutputFormatter):
             hours = int(duration / 3600)
             minutes = int((duration % 3600) / 60)
             return f"{hours}h {minutes}m"
+
+    def _format_languages(self, review: SecurityReview) -> str:
+        """
+        Format languages for display in HTML report.
+        
+        Shows all unique languages detected in the analyzed files.
+        
+        Args:
+            review: SecurityReview containing findings
+            
+        Returns:
+            Formatted language string
+        """
+        languages = review.get_all_languages()
+        
+        if len(languages) == 1:
+            return languages[0].capitalize()
+        else:
+            # Capitalize each language and join with commas
+            formatted = ", ".join(lang.capitalize() for lang in languages)
+            return formatted
 
     def _render_filters(self) -> str:
         """Render filter buttons."""

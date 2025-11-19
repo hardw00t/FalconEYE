@@ -1,7 +1,7 @@
 """Language detection domain service."""
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from collections import Counter
 from ..exceptions import LanguageDetectionError
 
@@ -245,3 +245,57 @@ class LanguageDetector:
             List of language names
         """
         return list(self.LANGUAGE_EXTENSIONS.keys())
+
+    def detect_all_languages(
+        self,
+        codebase_path: Path,
+        min_file_threshold: int = 1,
+    ) -> List[str]:
+        """
+        Detect all languages present in a codebase.
+
+        This method identifies ALL languages with files in the codebase,
+        not just the primary one. Useful for multi-language projects.
+
+        Args:
+            codebase_path: Root path of codebase
+            min_file_threshold: Minimum number of files required to include a language
+
+        Returns:
+            List of language names sorted by file count (descending)
+
+        Raises:
+            LanguageDetectionError: If no supported files found
+        """
+        # If single file, return its language
+        if codebase_path.is_file():
+            extension = codebase_path.suffix.lower()
+            language = self.EXTENSION_TO_LANGUAGE.get(extension)
+            if not language:
+                raise LanguageDetectionError(
+                    f"Unsupported file type: {extension}"
+                )
+            return [language]
+
+        # Count files by language
+        language_counts = self._count_files_by_language(codebase_path)
+
+        if not language_counts:
+            raise LanguageDetectionError(
+                f"No supported source files found in {codebase_path}"
+            )
+
+        # Filter by threshold and sort by count
+        filtered_languages = [
+            lang for lang, count in language_counts.items()
+            if count >= min_file_threshold
+        ]
+
+        # Sort by file count (descending)
+        sorted_languages = sorted(
+            filtered_languages,
+            key=lambda lang: language_counts[lang],
+            reverse=True,
+        )
+
+        return sorted_languages

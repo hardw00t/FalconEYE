@@ -81,6 +81,7 @@ class JSONFormatter(OutputFormatter):
                 "id": str(review.id),
                 "codebase_path": review.codebase_path,
                 "language": review.language,
+                "languages": review.get_all_languages(),
                 "started_at": review.started_at.isoformat() if review.started_at else None,
                 "completed_at": review.completed_at.isoformat() if review.completed_at else None,
                 "files_analyzed": review.files_analyzed,
