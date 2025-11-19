@@ -224,8 +224,15 @@ class IndexCodebaseHandler:
         # Step 8: Process code files
         processed_files = []
         for file_path in files_to_process:
+            # Detect language for each file individually
+            try:
+                file_language = self.language_detector.detect_language(file_path)
+            except Exception:
+                # Fallback to primary language if detection fails
+                file_language = language
+            
             file_meta = await self._process_file(
-                file_path, language, command, codebase, project_id
+                file_path, file_language, command, codebase, project_id
             )
             if file_meta:
                 processed_files.append(file_meta)
@@ -245,6 +252,12 @@ class IndexCodebaseHandler:
                 doc_count += 1
 
         # Step 10: Update project metadata in registry
+        # Detect all languages for metadata
+        try:
+            all_languages = self.language_detector.detect_all_languages(command.codebase_path)
+        except Exception:
+            all_languages = [language]
+
         project_metadata = ProjectMetadata(
             project_id=project_id,
             project_name=project_name,
@@ -254,7 +267,7 @@ class IndexCodebaseHandler:
             last_indexed_commit=self._get_current_commit(command.codebase_path) if project_type.value == "git" else None,
             total_files=len(files),
             total_chunks=sum(f.chunk_count for f in processed_files),
-            languages=[language],
+            languages=all_languages,  # Now stores all detected languages
         )
         self.index_registry.save_project(project_metadata)
 
@@ -266,6 +279,7 @@ class IndexCodebaseHandler:
             extra={
                 "project_id": project_id,
                 "project_name": project_name,
+                "languages_indexed": all_languages,
                 "files_processed": len(files_to_process),
                 "files_skipped": skipped_count,
                 "documents_processed": doc_count,
@@ -539,24 +553,48 @@ class IndexCodebaseHandler:
         excluded_patterns: List[str],
     ) -> List[Path]:
         """
-        Discover source files.
+        Discover source files for ALL languages in the codebase.
+
+        This method now detects and indexes files from all supported languages,
+        not just the primary language. This enables multi-language codebase support.
 
         Args:
             root_path: Root directory
-            language: Primary language
+            language: Primary language (kept for backward compatibility, but now indexes all)
             excluded_patterns: Patterns to exclude
 
         Returns:
-            List of file paths
+            List of file paths from all detected languages
         """
-        # Get extensions for language
-        extensions = self.language_detector.LANGUAGE_EXTENSIONS.get(language, [])
+        # Detect all languages in the codebase
+        try:
+            detected_languages = self.language_detector.detect_all_languages(root_path)
+            self.logger.info(
+                "Multi-language detection completed",
+                extra={
+                    "languages_detected": detected_languages,
+                    "language_count": len(detected_languages),
+                }
+            )
+        except Exception as e:
+            # Fallback to single language if detection fails
+            self.logger.warning(
+                "Multi-language detection failed, using primary language only",
+                extra={"error": str(e), "primary_language": language}
+            )
+            detected_languages = [language]
 
+        # Collect files from all detected languages
         files = []
-        for ext in extensions:
-            # Find all files with this extension
-            found = list(root_path.rglob(f"*{ext}"))
-            files.extend(found)
+        for lang in detected_languages:
+            extensions = self.language_detector.LANGUAGE_EXTENSIONS.get(lang, [])
+            for ext in extensions:
+                # Find all files with this extension
+                found = list(root_path.rglob(f"*{ext}"))
+                files.extend(found)
+
+        # Remove duplicates (in case of overlapping extensions)
+        files = list(set(files))
 
         # Filter excluded patterns
         filtered_files = []

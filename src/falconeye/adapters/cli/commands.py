@@ -85,7 +85,15 @@ def index_command(
             # Display summary
             console.print("")
             console.print(f"[green]Indexed {codebase.total_files} files[/green]")
-            console.print(f"[green]Language: {codebase.language}[/green]")
+            
+            # Show all detected languages
+            all_langs = codebase.all_languages
+            if len(all_langs) == 1:
+                console.print(f"[green]Language: {all_langs[0]}[/green]")
+            else:
+                langs_str = ", ".join(all_langs)
+                console.print(f"[green]Languages: {langs_str}[/green]")
+            
             console.print(f"[green]Total lines: {codebase.total_lines}[/green]")
 
         except KeyboardInterrupt:
@@ -146,23 +154,30 @@ def review_command(
     if language is None:
         language = container.language_detector.detect_language(path)
 
-    # Get system prompt from plugin
-    system_prompt = container.get_system_prompt(language)
-
     # Check if path is directory or file
     if path.is_dir():
-        # Directory - review all files
-
-        # Get file extensions for language
-        extensions = container.language_detector.LANGUAGE_EXTENSIONS.get(language, [])
-
-        # Find all files
+        # Directory - review all files from ALL detected languages
+        
+        # Detect all languages in the codebase
+        try:
+            all_languages = container.language_detector.detect_all_languages(path)
+            console.print(f"[cyan]Detected languages: {', '.join(all_languages)}[/cyan]")
+        except Exception:
+            # Fallback to single language
+            all_languages = [language]
+        
+        # Collect files from all detected languages
         files = []
-        for ext in extensions:
-            files.extend(list(path.rglob(f"*{ext}")))
+        for lang in all_languages:
+            extensions = container.language_detector.LANGUAGE_EXTENSIONS.get(lang, [])
+            for ext in extensions:
+                files.extend(list(path.rglob(f"*{ext}")))
+        
+        # Remove duplicates
+        files = list(set(files))
 
         if not files:
-            console.print(f"[yellow]No {language} files found in {path}[/yellow]")
+            console.print(f"[yellow]No source files found in {path}[/yellow]")
             return
 
         # Create aggregate review
@@ -186,10 +201,14 @@ def review_command(
                 try:
                     progress.update(task, description=f"Analyzing {file_path.name}...")
 
+                    # Detect language for this specific file
+                    file_language = container.language_detector.detect_language(file_path)
+                    file_system_prompt = container.get_system_prompt(file_language)
+
                     command = ReviewFileCommand(
                         file_path=file_path,
-                        language=language,
-                        system_prompt=system_prompt,
+                        language=file_language,
+                        system_prompt=file_system_prompt,
                         validate_findings=validate,
                         top_k_context=top_k,
                     )
@@ -222,7 +241,9 @@ def review_command(
         review = aggregate_review
 
     else:
-        # Single file
+        # Single file - get system prompt for the detected language
+        system_prompt = container.get_system_prompt(language)
+        
         command = ReviewFileCommand(
             file_path=path,
             language=language,

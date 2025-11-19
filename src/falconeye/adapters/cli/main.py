@@ -127,7 +127,7 @@ def review(
     output_format: Optional[str] = typer.Option(
         None,
         "--output", "-o",
-        help="Output format (console, json, sarif)",
+        help="Output format (console, json, sarif, html)",
     ),
     output_file: Optional[Path] = typer.Option(
         None,
@@ -190,7 +190,7 @@ def scan(
     output_format: Optional[str] = typer.Option(
         None,
         "--output", "-o",
-        help="Output format (console, json, sarif)",
+        help="Output format (console, json, sarif, html)",
     ),
     output_file: Optional[Path] = typer.Option(
         None,

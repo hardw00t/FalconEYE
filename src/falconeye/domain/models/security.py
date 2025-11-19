@@ -147,6 +147,50 @@ class SecurityReview:
         """Count low severity findings."""
         return len(self.get_findings_by_severity(Severity.LOW))
 
+    def get_all_languages(self) -> List[str]:
+        """
+        Get all unique languages from analyzed files.
+        
+        Extracts languages from file paths in findings by checking file extensions.
+        Returns list sorted by frequency (most common first).
+        
+        Returns:
+            List of unique language names
+        """
+        from collections import Counter
+        from pathlib import Path
+        
+        # Extension to language mapping (same as LanguageDetector)
+        EXTENSION_TO_LANGUAGE = {
+            ".c": "c", ".h": "c",
+            ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".hpp": "cpp", ".hh": "cpp",
+            ".py": "python",
+            ".rs": "rust",
+            ".go": "go",
+            ".php": "php",
+            ".java": "java",
+            ".dart": "dart",
+            ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
+            ".ts": "typescript", ".tsx": "typescript",
+            ".rb": "ruby", ".rake": "ruby",
+        }
+        
+        # Count languages from file paths in findings
+        language_counts = Counter()
+        for finding in self.findings:
+            if finding.file_path:
+                ext = Path(finding.file_path).suffix.lower()
+                if ext in EXTENSION_TO_LANGUAGE:
+                    language_counts[EXTENSION_TO_LANGUAGE[ext]] += 1
+        
+        # If no languages found from findings, return the primary language
+        if not language_counts:
+            return [self.language]
+        
+        # Sort by count (descending) and return language names
+        sorted_languages = [lang for lang, _ in language_counts.most_common()]
+        return sorted_languages
+
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         return {

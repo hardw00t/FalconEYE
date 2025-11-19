@@ -216,11 +216,16 @@ class SecurityAnalyzer:
                 return []
 
             # Handle different response formats
-            reviews = data.get("reviews", [])
-            if not reviews:
-                # Check if data itself is a list
-                if isinstance(data, list):
-                    reviews = data
+            # Check if data itself is a list (direct array response)
+            if isinstance(data, list):
+                reviews = data
+            else:
+                # Data is an object, extract reviews array
+                reviews = data.get("reviews", [])
+                if not reviews:
+                    # Maybe the object itself is a single review
+                    if "issue" in data:
+                        reviews = [data]
 
             findings = []
             for review in reviews:
@@ -318,30 +323,58 @@ class SecurityAnalyzer:
                 json_text = self._fix_json(json_text)
                 return json.loads(json_text)
 
-        # Try to find JSON in plain code block
+        # Try to extract JSON object/array from text FIRST
+        # (before checking code blocks, since ``` might be inside JSON strings)
+        # Find the first { or [ and try to parse from there
+        for start_char in ['{', '[']:
+            start_idx = text.find(start_char)
+            if start_idx == -1:
+                continue
+            
+            # Try to find the matching closing bracket
+            json_text = text[start_idx:]
+            
+            # Remove trailing non-JSON characters
+            while json_text and json_text[-1] not in ('}', ']'):
+                json_text = json_text[:-1].strip()
+            
+            if not json_text:
+                continue
+                
+            try:
+                # Try parsing directly first
+                return json.loads(json_text)
+            except json.JSONDecodeError:
+                # Try fixing common issues
+                try:
+                    fixed_json = self._fix_json(json_text)
+                    return json.loads(fixed_json)
+                except json.JSONDecodeError:
+                    # This attempt failed, try next start character
+                    continue
+
+        # Try to find JSON in code block as last resort
+        # (only if JSON wasn't found at the start of the text)
         if "```" in text:
             start = text.find("```") + 3
-            end = text.find("""`""", start)
+            # Skip language identifier if present (e.g., ```json)
+            newline_after_start = text.find('\n', start)
+            if newline_after_start != -1 and newline_after_start - start < 20:
+                start = newline_after_start + 1
+            
+            end = text.find("```", start)
             if end == -1:
                 end = len(text)
             json_text = text[start:end].strip()
-            try:
-                return json.loads(json_text)
-            except json.JSONDecodeError:
-                json_text = self._fix_json(json_text)
-                return json.loads(json_text)
+            
+            if json_text:
+                try:
+                    return json.loads(json_text)
+                except json.JSONDecodeError:
+                    json_text = self._fix_json(json_text)
+                    return json.loads(json_text)
 
-        # Try to extract JSON object/array from text
-        json_match = re.search(r'(\{[^{}]*\{.*\}[^{}]*\}|\[.*\])', text, re.DOTALL)
-        if json_match:
-            json_text = json_match.group(1)
-            try:
-                return json.loads(json_text)
-            except json.JSONDecodeError:
-                json_text = self._fix_json(json_text)
-                return json.loads(json_text)
-
-        # Try parsing the whole response
+        # Try parsing the whole response as last resort
         try:
             return json.loads(text)
         except json.JSONDecodeError:
@@ -425,6 +458,33 @@ class SecurityAnalyzer:
         # Fix any remaining single backslashes before common characters
         # This is aggressive but necessary for AI-generated content
         json_text = re.sub(r'\\([^"\\/bfnrtu])', r'\\\\\\1', json_text)
+        
+        # Fix unescaped quotes within strings (common AI error)
+        # This is a more aggressive approach that looks for patterns like ["key"]
+        def fix_unescaped_quotes(text: str) -> str:
+            """Fix unescaped quotes within JSON string values."""
+            import re
+            
+            # Fix quotes in patterns like $var["key"] or $_GET["cmd"]
+            # Use a callback to properly escape
+            def escape_array_access(match):
+                prefix = match.group(1)  # $var[
+                key = match.group(2)      # the key
+                return prefix + '\\"' + key + '\\"]'
+            
+            text = re.sub(r'(\$[\w_]+\[)"([^"]+)"\]', escape_array_access, text)
+            
+            # Also handle single quotes
+            def escape_array_access_single(match):
+                prefix = match.group(1)
+                key = match.group(2)
+                return prefix + "\\'" + key + "\\']"
+            
+            text = re.sub(r"(\$[\w_]+\[)'([^']+)'\]", escape_array_access_single, text)
+            
+            return text
+        
+        json_text = fix_unescaped_quotes(json_text)
         
         # Remove trailing commas before closing braces/brackets
         json_text = re.sub(r',\s*([}\]])', r'\1', json_text)
