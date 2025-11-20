@@ -108,20 +108,59 @@ falconeye scan /path/to/your/project
 ### Single File Analysis
 
 ```bash
-falconeye review src/auth/login.py
+$ falconeye scan ./myapp
+
+███████╗ █████╗ ██╗      ██████╗ ██████╗ ███╗   ██╗███████╗██╗   ██╗███████╗
+██╔════╝██╔══██╗██║     ██╔════╝██╔═══██╗████╗  ██║██╔════╝╚██╗ ██╔╝██╔════╝
+█████╗  ███████║██║     ██║     ██║   ██║██╔██╗ ██║█████╗   ╚████╔╝ █████╗  
+██╔══╝  ██╔══██║██║     ██║     ██║   ██║██║╚██╗██║██╔══╝    ╚██╔╝  ██╔══╝  
+██║     ██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║███████╗   ██║   ███████╗
+╚═╝     ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚══════╝
+
+                        Security Code Review
+                     v2.0 - AI-Powered Analysis
+                     by hardw00t & h4ckologic
+
+Indexing codebase...
+Indexed 127 files in 8.3s
+
+Analyzing for vulnerabilities...
+Found 12 potential issues
+
+Results saved to: falconeye_reports/falconeye_myapp_20251113_130425.html
 ```
 
-Get detailed security analysis of a specific file with context from your entire codebase.
+## ✨ Key Features
 
-### Directory Analysis
+### AI-Powered Analysis
+- **Semantic Code Understanding**: Goes beyond pattern matching to understand intent and data flow
+- **RAG-Enhanced Context**: Retrieves similar code patterns from your entire codebase
+- **Confidence Scoring**: AI rates its confidence in each finding
+- **CWE Mapping**: Maps vulnerabilities to Common Weakness Enumeration
 
-```bash
-falconeye review src/api/
-```
+### Enhanced CLI Experience
+- **ASCII Art Banner**: Stylish cyan-themed banner on every command
+- **Rich Console Output**: Color-coded terminal output with progress indicators
+- **Smart Error Messages**: Clear, actionable error messages with solutions
+- **Graceful Degradation**: Continues analysis even when individual files fail
 
-Analyze all files in a directory with comprehensive coverage.
+### Robust Processing
+- **Advanced JSON Parsing**: Multi-layer escape sequence fixing for AI responses
+- **Automatic Line Numbers**: Populates line numbers from source files
+- **Context Expansion**: Automatically expands code snippets with surrounding context
+- **Debug File Generation**: Saves problematic responses for troubleshooting
 
 ### Multiple Output Formats
+- **Console**: Rich, color-coded terminal output
+- **JSON**: Machine-readable format for CI/CD integration
+- **HTML**: Interactive reports with executive summaries
+- **SARIF**: Industry-standard format for security platforms
+
+### Performance
+- **Incremental Scanning**: Only re-analyzes changed files after initial scan
+- **Parallel Processing**: Batch processing for faster analysis
+- **Smart Caching**: Reuses embeddings and context when possible
+- **Optimized Chunking**: Intelligent code segmentation for better context
 
 ```bash
 # Human-readable console output
@@ -261,42 +300,24 @@ Machine-readable format for CI/CD integration and programmatic processing:
 
 Run `falconeye --help` for complete documentation.
 
-## Architecture Overview
+### Areas for Contribution
+- 🌐 **Language Support**: Add support for new programming languages
+- 📊 **Output Formats**: Implement new report formats (PDF, CSV, etc.)
+- 🎨 **HTML Templates**: Create custom report templates
+- 🔌 **Integrations**: Build integrations with security platforms
+- ⚡ **Performance**: Optimize analysis speed and memory usage
+- 📚 **Documentation**: Improve guides and examples
 
-FalconEYE is built on **hexagonal architecture** principles, ensuring clean separation between business logic and infrastructure:
-
-```
-                    ┌──────────────────┐
-                    │   CLI Interface  │
-                    └────────┬─────────┘
-                             │
-                    ┌────────▼─────────┐
-                    │  Application     │
-                    │  Command         │
-                    │  Handlers        │
-                    └────────┬─────────┘
-                             │
-         ┌───────────────────┼───────────────────┐
-         │                   │                   │
-    ┌────▼────┐       ┌──────▼──────┐      ┌────▼────┐
-    │ Security│       │  Context    │      │Language │
-    │Analyzer │       │  Assembler  │      │Detector │
-    └────┬────┘       └──────┬──────┘      └────┬────┘
-         │                   │                   │
-         └───────────────────┼───────────────────┘
-                             │
-                    ┌────────▼─────────┐
-                    │  Infrastructure  │
-                    ├──────────────────┤
-                    │ • Ollama LLM     │
-                    │ • Vector Store   │
-                    │ • AST Parser     │
-                    │ • Logging        │
-                    │ • Resilience     │
-                    └──────────────────┘
-```
-
-**Key Components:**
+### Pull Request Process
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Update documentation
+7. Commit your changes (`git commit -m 'Add amazing feature'`)
+8. Push to your branch (`git push origin feature/amazing-feature`)
+9. Open a Pull Request
 
 - **Domain Layer**: Pure business logic for security analysis
 - **Application Layer**: Orchestrates use cases and workflows
@@ -343,19 +364,12 @@ A: Use SARIF output format which integrates with GitHub Security, GitLab, and mo
 
 ## Contributing
 
-We welcome contributions! Please feel free to submit issues and pull requests.
-
-### Areas for Contribution
-- Additional language support
-- New output formats (PDF, CSV)
-- Custom HTML report templates
-- Integration with security platforms
-- Performance optimizations
-- Documentation improvements
-
-## License
-
-MIT License
+Use SARIF output format which integrates with GitHub Security, GitLab, and most DevSecOps platforms:
+```bash
+falconeye scan ./src --format sarif --output results.sarif
+```
+</details>
+---
 
 Copyright (c) 2025 hardw00t h4ckologic
 
@@ -410,4 +424,8 @@ falconeye info
 
 **Built for security engineers who demand more than pattern matching.**
 
-Version 2.0.0 | Python 3.12+ | Production Ready | by hardw00t & h4ckologic
+Version 2.0.0 | Python 3.12+ | Production Ready
+
+Made with ❤️ by [hardw00t](https://github.com/hardw00t) & [h4ckologic](https://github.com/h4ckologic)
+
+</div>
