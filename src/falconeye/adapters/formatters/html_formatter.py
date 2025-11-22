@@ -479,6 +479,21 @@ class HTMLFormatter(OutputFormatter):
             color: #166534;
         }}
         
+        .mitigation ul {{
+            margin: 0;
+            padding-left: 20px;
+            list-style-type: disc;
+        }}
+        
+        .mitigation li {{
+            margin: 8px 0;
+            line-height: 1.6;
+        }}
+        
+        .mitigation p {{
+            margin: 0;
+        }}
+        
         footer {{
             text-align: center;
             padding: 40px 30px;
@@ -764,7 +779,7 @@ class HTMLFormatter(OutputFormatter):
             <div class="finding-section">
                 <h4>Recommendation</h4>
                 <div class="mitigation">
-                    {self._escape_html(finding.mitigation)}
+                    {self._format_mitigation(finding.mitigation)}
                 </div>
             </div>
             
@@ -810,3 +825,43 @@ class HTMLFormatter(OutputFormatter):
                 .replace('>', '&gt;')
                 .replace('"', '&quot;')
                 .replace("'", '&#39;'))
+
+    def _format_mitigation(self, mitigation: str) -> str:
+        """
+        Format mitigation text as bullet points if multi-line, otherwise as paragraph.
+        
+        Args:
+            mitigation: Mitigation recommendation text
+            
+        Returns:
+            HTML formatted mitigation
+        """
+        if not mitigation:
+            return ""
+        
+        # Check if mitigation has multiple lines or numbered points
+        lines = [line.strip() for line in mitigation.split('\n') if line.strip()]
+        
+        # If single line, return as paragraph
+        if len(lines) == 1:
+            return f"<p>{self._escape_html(mitigation)}</p>"
+        
+        # Check if lines start with numbers (1., 2., etc.) or bullets (-, *, •)
+        has_markers = any(
+            line[0].isdigit() or line.startswith(('-', '*', '•', '→', '▸'))
+            for line in lines if line
+        )
+        
+        # Format as bullet list
+        bullet_items = []
+        for line in lines:
+            # Remove common prefixes like "1.", "2.", "-", "*", etc.
+            cleaned = line.lstrip('0123456789.-*•→▸ ')
+            if cleaned:
+                bullet_items.append(f"<li>{self._escape_html(cleaned)}</li>")
+        
+        if bullet_items:
+            return f"<ul>{''.join(bullet_items)}</ul>"
+        
+        # Fallback to paragraph
+        return f"<p>{self._escape_html(mitigation)}</p>"
